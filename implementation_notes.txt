@@ -1,0 +1,18 @@
+PRESENT IMPLEMENTATION
+-------------------
+dataset is cardio_train.csv with binary target cardio (0/1).
+src/1_eda.py is in place and gives the quick audit (rows, class counts, missing, duplicates).
+src/2_preprocessing.py does the practical cleaning (invalid blood pressure rows etc), drops id, adds age_years + bmi, then saves processed arrays.
+src/3_models.py runs logistic regression + random forest and writes the metrics csv.
+main output files right now are:
+results/metrics/1_eda_summary.csv
+results/metrics/2_split_summary.csv
+results/metrics/3_model_results.csv
+
+TO BE ADDED
+------------------
+if needed we can bring in mlp + histgradientboosting from the bigger implementation.
+after that we can add model comparison and maybe a simple round-2 tuning pass.
+for now this repo is meant to stay compact and reliable, so run order is just:
+1_eda -> 2_preprocessing -> 3_models
+and rerun from project root whenever the data/outputs get out of sync.
