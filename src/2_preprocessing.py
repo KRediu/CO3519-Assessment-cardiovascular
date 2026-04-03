@@ -1,9 +1,16 @@
 from __future__ import annotations
 
+import numpy as np
 import pandas as pd
 from sklearn.model_selection import train_test_split
 
 from utils import METRICS_DIR, PROCESSED_DIR, clean, ensure_dirs, load_cardio, make_xy, preprocessor, save_np
+
+
+def _as_dense(arr):
+    if hasattr(arr, "toarray"):
+        return arr.toarray()
+    return np.asarray(arr)
 
 
 def main() -> None:
@@ -14,8 +21,8 @@ def main() -> None:
         x, y, test_size=0.2, stratify=y, random_state=42
     )
     pre = preprocessor(x_train)
-    x_train_t = pre.fit_transform(x_train)
-    x_test_t = pre.transform(x_test)
+    x_train_t = _as_dense(pre.fit_transform(x_train))
+    x_test_t = _as_dense(pre.transform(x_test))
 
     save_np("X_train", x_train_t)
     save_np("X_test", x_test_t)

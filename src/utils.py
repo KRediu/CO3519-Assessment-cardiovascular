@@ -14,21 +14,17 @@ ROOT = Path(__file__).resolve().parents[1]
 RAW_DIR = ROOT / "data" / "raw"
 PROCESSED_DIR = ROOT / "data" / "processed"
 METRICS_DIR = ROOT / "results" / "metrics"
-
-FALLBACK_CARDIO = ROOT.parent / "IPV" / "data" / "raw" / "cardio_train.csv"
-
+FIGURES_DIR = ROOT / "results" / "figures"
 
 def ensure_dirs() -> None:
-    for d in [RAW_DIR, PROCESSED_DIR, METRICS_DIR]:
+    for d in [RAW_DIR, PROCESSED_DIR, METRICS_DIR, FIGURES_DIR]:
         d.mkdir(parents=True, exist_ok=True)
 
 
 def load_cardio() -> pd.DataFrame:
     path = RAW_DIR / "cardio_train.csv"
-    if not path.exists() and FALLBACK_CARDIO.exists():
-        path = FALLBACK_CARDIO
     if not path.exists():
-        raise FileNotFoundError("Place cardio_train.csv in data/raw or keep IPV fallback available.")
+        raise FileNotFoundError("Place cardio_train.csv in data/raw.")
     return pd.read_csv(path, sep=";")
 
 
@@ -78,3 +74,10 @@ def preprocessor(x_train: pd.DataFrame) -> ColumnTransformer:
 
 def save_np(name: str, arr: np.ndarray) -> None:
     np.save(PROCESSED_DIR / f"{name}.npy", arr)
+
+
+def save_metrics_csv(df: pd.DataFrame, filename: str) -> Path:
+    ensure_dirs()
+    path = METRICS_DIR / filename
+    df.to_csv(path, index=False)
+    return path

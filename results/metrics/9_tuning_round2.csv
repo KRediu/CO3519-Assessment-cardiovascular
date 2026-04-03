@@ -1,0 +1,3 @@
+stage,test_acc,test_f1,test_auc,test_ap,best_cv_roc_auc,best_params
+hgb_default,0.7303910858641032,0.7132011155872328,0.7989789652134145,0.7847341182586567,,
+hgb_after_random_search,0.7306095695870658,0.714164284058419,0.799375317129273,0.7853725461402463,0.8011889466375691,"{'min_samples_leaf': 20, 'max_leaf_nodes': 127, 'max_depth': 4, 'learning_rate': 0.1, 'l2_regularization': 1.0}"

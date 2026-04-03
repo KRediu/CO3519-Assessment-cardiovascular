@@ -1,0 +1,2 @@
+model,cv_acc_mean,cv_f1_mean,cv_auc_mean,test_acc,test_f1,test_auc
+hist_gradient_boosting_tuned,,,0.8011889466375691,0.7306095695870658,0.714164284058419,0.799375317129273
