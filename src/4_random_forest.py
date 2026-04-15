@@ -44,7 +44,7 @@ def main() -> None:
             }
         ]
     )
-    path = save_metrics_csv(out, "3_random_forest_metrics.csv")
+    path = save_metrics_csv(out, "4_random_forest_metrics.csv")
     print(f"Saved RF metrics: {path}")
 
 

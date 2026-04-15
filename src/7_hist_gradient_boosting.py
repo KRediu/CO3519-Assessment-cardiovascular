@@ -43,7 +43,7 @@ def main() -> None:
             }
         ]
     )
-    path = save_metrics_csv(out, "6_hist_gradient_boosting_metrics.csv")
+    path = save_metrics_csv(out, "7_hist_gradient_boosting_metrics.csv")
     print(f"Saved HGB metrics: {path}")
 
 

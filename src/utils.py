@@ -1,6 +1,7 @@
-from __future__ import annotations
+﻿from __future__ import annotations
 
 from pathlib import Path
+from typing import Dict, Tuple
 
 import numpy as np
 import pandas as pd
@@ -10,25 +11,47 @@ from sklearn.pipeline import Pipeline
 from sklearn.preprocessing import OneHotEncoder, StandardScaler
 
 
-ROOT = Path(__file__).resolve().parents[1]
-RAW_DIR = ROOT / "data" / "raw"
-PROCESSED_DIR = ROOT / "data" / "processed"
-METRICS_DIR = ROOT / "results" / "metrics"
-FIGURES_DIR = ROOT / "results" / "figures"
+PROJECT_ROOT = Path(__file__).resolve().parents[1]
+RAW_DIR = PROJECT_ROOT / "data" / "raw"
+PROCESSED_DIR = PROJECT_ROOT / "data" / "processed"
+RESULTS_DIR = PROJECT_ROOT / "results"
+METRICS_DIR = RESULTS_DIR / "metrics"
+FIGURES_DIR = RESULTS_DIR / "figures"
+
+DEFAULT_RAW = RAW_DIR / "cardio_train.csv"
+
 
 def ensure_dirs() -> None:
-    for d in [RAW_DIR, PROCESSED_DIR, METRICS_DIR, FIGURES_DIR]:
+    for d in [RAW_DIR, PROCESSED_DIR, RESULTS_DIR, METRICS_DIR, FIGURES_DIR]:
         d.mkdir(parents=True, exist_ok=True)
 
 
-def load_cardio() -> pd.DataFrame:
-    path = RAW_DIR / "cardio_train.csv"
-    if not path.exists():
-        raise FileNotFoundError("Place cardio_train.csv in data/raw.")
-    return pd.read_csv(path, sep=";")
+def locate_raw_dataset() -> Path:
+    if DEFAULT_RAW.exists():
+        return DEFAULT_RAW
+    raise FileNotFoundError(f"Could not find cardio dataset at {DEFAULT_RAW}")
 
 
-def clean(df: pd.DataFrame) -> pd.DataFrame:
+def load_raw_cardio() -> pd.DataFrame:
+    return pd.read_csv(locate_raw_dataset(), sep=";")
+
+
+def data_audit(df: pd.DataFrame) -> Dict[str, float]:
+    return {
+        "rows": int(len(df)),
+        "cols": int(df.shape[1]),
+        "missing_total": int(df.isna().sum().sum()),
+        "duplicate_rows_full": int(df.duplicated().sum()),
+        "duplicate_rows_without_id": int(df.drop(columns=["id"]).duplicated().sum()),
+        "target_0": int((df["cardio"] == 0).sum()),
+        "target_1": int((df["cardio"] == 1).sum()),
+        "bad_bp": int(
+            ((df["ap_hi"] < df["ap_lo"]) | (df["ap_hi"] <= 0) | (df["ap_lo"] <= 0)).sum()
+        ),
+    }
+
+
+def clean_cardio(df: pd.DataFrame) -> pd.DataFrame:
     mask = (
         (df["ap_hi"] >= df["ap_lo"])
         & (df["ap_hi"] > 0)
@@ -41,7 +64,7 @@ def clean(df: pd.DataFrame) -> pd.DataFrame:
     return df.loc[mask].copy()
 
 
-def make_xy(df: pd.DataFrame) -> tuple[pd.DataFrame, pd.Series]:
+def feature_engineer(df: pd.DataFrame) -> Tuple[pd.DataFrame, pd.Series]:
     x = df.drop(columns=["cardio"]).copy()
     y = df["cardio"].astype(int).copy()
     if "id" in x.columns:
@@ -51,29 +74,33 @@ def make_xy(df: pd.DataFrame) -> tuple[pd.DataFrame, pd.Series]:
     return x, y
 
 
-def preprocessor(x_train: pd.DataFrame) -> ColumnTransformer:
-    num = x_train.select_dtypes(include=["int64", "float64"]).columns.tolist()
-    cat = [c for c in x_train.columns if c not in num]
+def build_preprocessor(x_train: pd.DataFrame) -> ColumnTransformer:
+    numeric_cols = x_train.select_dtypes(include=["int64", "float64"]).columns.tolist()
+    categorical_cols = [c for c in x_train.columns if c not in numeric_cols]
     return ColumnTransformer(
-        [
+        transformers=[
             (
                 "num",
-                Pipeline([("imp", SimpleImputer(strategy="median")), ("sc", StandardScaler())]),
-                num,
+                Pipeline(
+                    [
+                        ("imputer", SimpleImputer(strategy="median")),
+                        ("scaler", StandardScaler()),
+                    ]
+                ),
+                numeric_cols,
             ),
             (
                 "cat",
                 Pipeline(
-                    [("imp", SimpleImputer(strategy="most_frequent")), ("ohe", OneHotEncoder(handle_unknown="ignore"))]
+                    [
+                        ("imputer", SimpleImputer(strategy="most_frequent")),
+                        ("ohe", OneHotEncoder(handle_unknown="ignore")),
+                    ]
                 ),
-                cat,
+                categorical_cols,
             ),
         ]
     )
-
-
-def save_np(name: str, arr: np.ndarray) -> None:
-    np.save(PROCESSED_DIR / f"{name}.npy", arr)
 
 
 def save_metrics_csv(df: pd.DataFrame, filename: str) -> Path:

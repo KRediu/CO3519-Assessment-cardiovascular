@@ -1,34 +1,38 @@
 PRESENT IMPLEMENTATION
 -------------------
-Dataset: cardio_train.csv, binary target cardio (0/1). One training script per model, each writes its own metrics CSV; then a comparison script, evaluation figures, and an optional HGB tuning round.
+Dataset: cardio_train.csv, binary target cardio (0/1).
 
-1_eda.py: raw vs cleaned counts → results/metrics/1_eda_summary.csv
+1_eda.py: full audit csv, raw vs cleaned, duplicate checks, bad blood-pressure count, class counts.
 
-2_preprocessing.py: clean(), features, stratified split, ColumnTransformer; dense matrices for HGB/np.save → data/processed/*.npy, feature_names.csv, results/metrics/2_split_summary.csv
+2_preprocessing.py: cleaning, feature engineering, stratified split, preprocessing pipeline, processed arrays.
 
-3_random_forest.py → results/metrics/3_random_forest_metrics.csv
-4_logistic_regression.py → results/metrics/4_logistic_regression_metrics.csv
-5_mlp.py → results/metrics/5_mlp_metrics.csv
-6_hist_gradient_boosting.py → results/metrics/6_hist_gradient_boosting_metrics.csv
+3_umap_visualization.py: UMAP projection on a stratified sample, plus embedding csv.
 
-7_results_comparison.py: concatenates the above (and 9_tuned_model_metrics.csv if present) → results/metrics/7_model_comparison.csv
+4_random_forest.py: round-1 RF metrics csv.
+5_logistic_regression.py: round-1 logistic metrics csv.
+6_mlp.py: round-1 MLP metrics csv.
+7_hist_gradient_boosting.py: round-1 HGB metrics csv.
 
-8_evaluation_plots.py: ROC, PR, confusion matrices (estimators defined inline to match scripts 3, 4, 5, 6) → results/figures/*.png
+8_hyperparameter_tuning.py: RandomizedSearchCV over LR, RF, MLP, HGB, saves tuned metrics and best-params json.
 
-9_tuning_round2.py: default HGB (same as script 6) vs RandomizedSearchCV; results/metrics/9_tuning_round2.csv and 9_tuned_model_metrics.csv (for 7_)
+9_results_comparison.py: combines round-1 model csvs and tuned csv (if present) into 9_model_comparison.csv.
 
-utils.py: paths, load/clean/make_xy/preprocessor, save_np, save_metrics_csv.
+10_round_delta_report.py: compares round_1 vs round_2_tuned by model and writes delta metrics.
 
-Typical run order: 1 → 2 → 3 → 4 → 5 → 6 → 7 → 8 → 9 → 7 (optional, to refresh comparison with tuned row).
+11_visualizations.py: class balance, correlation heatmap, ROC, PR, confusion matrices.
 
-TO BE ADDED
--------------------
-run_pipeline.py: fires the src scripts in order, skip flags for the slow ones, optional wipe of processed/metrics/figures before a run.
+run_pipeline.py: full orchestrator, clears generated outputs first, runs numbered scripts in order, optional skip flags.
 
-umap_visualization.py: 2D embedding scatter built from the processed feature matrix (the complete pipeline keeps this as its own step before the model scripts).
+utils.py: shared paths, data load/clean/audit/feature engineering, preprocessor builder, metrics saver.
 
-joint hyperparameter tuning: one module runs RandomizedSearchCV for LR, RF, MLP, and HGB, saves every tuned row into metrics and dumps best params to json. Script 9 here only searches HGB and only adds one tuned row file.
-
-second visualization pass: class balance bar and correlation heatmap off cleaned raw data, plus ROC/PR/confusion redrawn with seaborn heatmaps. Script 8 here only does ROC/PR/confusion with the sklearn display helpers, no raw-data figures.
-
-round_delta_report.py: reads 7_model_comparison.csv, lines up round_1 vs round_2_tuned per model, writes a small delta csv.
+notes for report
+------------------
+We used cardio_train.csv as a binary risk task (cardio 0/1), then cleaned obvious bad rows (invalid blood pressure ordering/values, extreme height/weight outliers) before modeling.
+We engineered age_years and bmi, dropped id, then applied a standard preprocessing pipeline (imputation + scaling / encoding) with a stratified train-test split.
+Round 1 used four models: random forest, logistic regression, MLP, and histogram gradient boosting; each was evaluated with CV plus hold-out test metrics.
+We generated comparison outputs and figures so results are not just one score: ROC/PR behavior, confusion patterns, class balance, and correlation view.
+Round 2 tuning used RandomizedSearchCV across all four models, then we compared tuned vs untuned in the comparison + delta outputs.
+Main result pattern: gains from tuning were generally small, some models improved marginally while others were flat/slightly down, which suggests model overlap + limited headroom from parameter-only changes.
+The strongest practical takeaway is consistency across models around similar performance bands, rather than one model massively dominating.
+The useful narrative is: solid base pipeline, sensible cleaning/feature work, fair model comparison, then tuning + delta analysis to show what changed and by how much.
+Limits to mention: tabular-only features, no external data enrichment, and improvements mostly incremental after first-pass modeling.

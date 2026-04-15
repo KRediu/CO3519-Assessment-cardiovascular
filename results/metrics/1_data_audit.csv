@@ -1,0 +1,4 @@
+stage,rows,cols,missing_total,duplicate_rows_full,duplicate_rows_without_id,target_0,target_1,bad_bp,dropped_rows_after_cleaning
+raw,70000.0,13.0,0.0,0.0,24.0,35021.0,34979.0,1256.0,
+cleaned,68654.0,13.0,0.0,0.0,24.0,34690.0,33964.0,0.0,
+drop_summary,,,,,,,,,1346.0
