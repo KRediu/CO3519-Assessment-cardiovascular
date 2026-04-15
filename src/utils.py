@@ -1,41 +1,65 @@
-﻿from __future__ import annotations
+﻿# Change python behavior
+from __future__ import annotations
 
+# Standart library imports
 from pathlib import Path
 from typing import Dict, Tuple
 
+# General library imports
 import numpy as np
 import pandas as pd
 from sklearn.compose import ColumnTransformer
 from sklearn.impute import SimpleImputer
 from sklearn.pipeline import Pipeline
 from sklearn.preprocessing import OneHotEncoder, StandardScaler
+from sklearn.model_selection import StratifiedShuffleSplit
 
 
+# Project root
 PROJECT_ROOT = Path(__file__).resolve().parents[1]
+
+# Data directories
 RAW_DIR = PROJECT_ROOT / "data" / "raw"
 PROCESSED_DIR = PROJECT_ROOT / "data" / "processed"
+
+# Results directories
 RESULTS_DIR = PROJECT_ROOT / "results"
 METRICS_DIR = RESULTS_DIR / "metrics"
 FIGURES_DIR = RESULTS_DIR / "figures"
 
+# Default dataset file
 DEFAULT_RAW = RAW_DIR / "cardio_train.csv"
 
 
+# Ensures the directories exist
 def ensure_dirs() -> None:
     for d in [RAW_DIR, PROCESSED_DIR, RESULTS_DIR, METRICS_DIR, FIGURES_DIR]:
         d.mkdir(parents=True, exist_ok=True)
 
 
+# Returns raw dataset file, if it exists
 def locate_raw_dataset() -> Path:
     if DEFAULT_RAW.exists():
         return DEFAULT_RAW
     raise FileNotFoundError(f"Could not find cardio dataset at {DEFAULT_RAW}")
 
 
+# Load data from raw dataset file
 def load_raw_cardio() -> pd.DataFrame:
     return pd.read_csv(locate_raw_dataset(), sep=";")
 
 
+# Load train and test data
+def load_processed_data():
+    x_train = np.load(PROCESSED_DIR / "X_train.npy")
+    x_test = np.load(PROCESSED_DIR / "X_test.npy")
+    y_train = np.load(PROCESSED_DIR / "y_train.npy")
+    y_test = np.load(PROCESSED_DIR / "y_test.npy")
+
+    return x_train, x_test, y_train, y_test
+
+
+# Perform data quality audit
 def data_audit(df: pd.DataFrame) -> Dict[str, float]:
     return {
         "rows": int(len(df)),
@@ -51,6 +75,7 @@ def data_audit(df: pd.DataFrame) -> Dict[str, float]:
     }
 
 
+# Clean cardio dataset, keeps realistic data
 def clean_cardio(df: pd.DataFrame) -> pd.DataFrame:
     mask = (
         (df["ap_hi"] >= df["ap_lo"])
@@ -64,6 +89,7 @@ def clean_cardio(df: pd.DataFrame) -> pd.DataFrame:
     return df.loc[mask].copy()
 
 
+# Splits features and target and create new features
 def feature_engineer(df: pd.DataFrame) -> Tuple[pd.DataFrame, pd.Series]:
     x = df.drop(columns=["cardio"]).copy()
     y = df["cardio"].astype(int).copy()
@@ -74,6 +100,7 @@ def feature_engineer(df: pd.DataFrame) -> Tuple[pd.DataFrame, pd.Series]:
     return x, y
 
 
+# Build preprocessing pipeline for machine learning models
 def build_preprocessor(x_train: pd.DataFrame) -> ColumnTransformer:
     numeric_cols = x_train.select_dtypes(include=["int64", "float64"]).columns.tolist()
     categorical_cols = [c for c in x_train.columns if c not in numeric_cols]
@@ -103,6 +130,18 @@ def build_preprocessor(x_train: pd.DataFrame) -> ColumnTransformer:
     )
 
 
+# Create a smaller dataset while keeping class balance
+def stratified_subsample(
+    x: np.ndarray, y: np.ndarray, max_points: int, random_state: int
+) -> tuple[np.ndarray, np.ndarray]:
+    if len(y) <= max_points:
+        return x, y
+    sss = StratifiedShuffleSplit(n_splits=1, train_size=max_points, random_state=random_state)
+    idx, _ = next(sss.split(x, y))
+    return x[idx], y[idx]
+
+
+# Saves metrics as CSV files
 def save_metrics_csv(df: pd.DataFrame, filename: str) -> Path:
     ensure_dirs()
     path = METRICS_DIR / filename

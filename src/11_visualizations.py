@@ -1,26 +1,25 @@
+# Change python behavior
 from __future__ import annotations
 
+# General library imports
 import matplotlib.pyplot as plt
-import numpy as np
-import pandas as pd
 import seaborn as sns
 from sklearn.ensemble import HistGradientBoostingClassifier, RandomForestClassifier
 from sklearn.linear_model import LogisticRegression
-from sklearn.metrics import (
-    auc,
-    confusion_matrix,
-    precision_recall_curve,
-    roc_curve,
-)
+from sklearn.metrics import auc, confusion_matrix, precision_recall_curve, roc_curve
 from sklearn.neural_network import MLPClassifier
 
-from utils import FIGURES_DIR, PROCESSED_DIR, clean_cardio, ensure_dirs, load_raw_cardio
+# Custom imports
+from utils import FIGURES_DIR, load_processed_data, clean_cardio, ensure_dirs, load_raw_cardio
 
 
+# Create the models to be reused
 def model_dict() -> dict[str, object]:
     return {
         "Logistic Regression": LogisticRegression(
-            max_iter=2000, class_weight="balanced", random_state=42
+            max_iter=2000, 
+            class_weight="balanced", 
+            random_state=42
         ),
         "Random Forest": RandomForestClassifier(
             n_estimators=300,
@@ -48,6 +47,7 @@ def model_dict() -> dict[str, object]:
     }
 
 
+# Create plot showing class balance (how balanced the dataset is based on targets)
 def plot_class_balance() -> None:
     df = clean_cardio(load_raw_cardio())
     counts = df["cardio"].value_counts().sort_index()
@@ -60,6 +60,7 @@ def plot_class_balance() -> None:
     plt.close()
 
 
+# Create plot showing correlation heatmap
 def plot_correlation_heatmap() -> None:
     df = clean_cardio(load_raw_cardio()).copy()
     df["age_years"] = df["age"] / 365.25
@@ -84,11 +85,10 @@ def plot_correlation_heatmap() -> None:
     plt.close()
 
 
+# Create plots (roc curves, precision–recall curves, and confusion matrices)
 def plot_roc_pr_and_confusion() -> None:
-    x_train = np.load(PROCESSED_DIR / "X_train.npy")
-    x_test = np.load(PROCESSED_DIR / "X_test.npy")
-    y_train = np.load(PROCESSED_DIR / "y_train.npy")
-    y_test = np.load(PROCESSED_DIR / "y_test.npy")
+    # Load train and test data
+    x_train, x_test, y_train, y_test = load_processed_data()
 
     models = model_dict()
     roc_data = {}
@@ -153,13 +153,13 @@ def plot_roc_pr_and_confusion() -> None:
     plt.close()
 
 
-def main() -> None:
-    ensure_dirs()
-    plot_class_balance()
-    plot_correlation_heatmap()
-    plot_roc_pr_and_confusion()
-    print(f"Saved visualizations to: {FIGURES_DIR}")
+# Ensure the directories exist
+ensure_dirs()
 
+# Create and save plots
+plot_class_balance()
+plot_correlation_heatmap()
+plot_roc_pr_and_confusion()
 
-if __name__ == "__main__":
-    main()
+# Print confirmation
+print(f"Saved visualizations to: {FIGURES_DIR}")
