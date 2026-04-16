@@ -25,7 +25,7 @@ except ImportError as e:
 # Load train and test data
 x_train, x_test, y_train, y_test = load_processed_data()
 
-# Stratify data for visualisation
+# Combine train and test data, then take a stratified sample for visualisation
 x_all = np.vstack([x_train, x_test])
 y_all = np.concatenate([y_train, y_test])
 x_plot, y_plot = stratified_subsample(x_all, y_all, max_points=20000, random_state=42)
@@ -36,16 +36,16 @@ reducer = umap.UMAP(
     min_dist=0.1,
     metric="euclidean", 
     n_components=2, 
-    random_state=42,
-    n_jobs=1
+    n_jobs=-1,
+    random_state=42
 )
 emb = reducer.fit_transform(x_plot)
 
-# Convert UMAP visualisation into a tables
+# Convert UMAP embedding into a tables
 emb_df = pd.DataFrame({"umap_1": emb[:, 0], "umap_2": emb[:, 1], "cardio": y_plot})
 emb_df.to_csv(FIGURES_DIR / "3_umap_embedding_sample.csv", index=False)
 
-# Save UMAP visualisation as a plot
+# Save UMAP embedding as a plot
 plt.figure(figsize=(8, 6))
 sns.scatterplot(
     data=emb_df,

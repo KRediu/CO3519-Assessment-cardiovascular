@@ -22,7 +22,7 @@ x_train, x_test, y_train, y_test = train_test_split(
     x, y, test_size=0.2, stratify=y, random_state=42
 )
 
-# Preprocess traning and test data for ML
+# Preprocess training and test data for ML
 pre = build_preprocessor(x_train)
 x_train_t = pre.fit_transform(x_train)
 x_test_t = pre.transform(x_test)
@@ -47,4 +47,4 @@ save_metrics_csv(
 )
 
 # Print confirmation
-print("Saved processed arrays in data/processed")
+print(f"Saved processed arrays in {PROCESSED_DIR}")

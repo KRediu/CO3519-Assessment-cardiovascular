@@ -8,19 +8,19 @@ from sklearn.model_selection import StratifiedKFold, cross_validate
 from sklearn.neural_network import MLPClassifier
 
 # Custom imports
-from utils import load_processed_data, save_metrics_csv
+from utils import load_processed_data, save_metrics_csv, save_model
 
 
 # Load train and test data
 x_train, x_test, y_train, y_test = load_processed_data()
 
-# Create logistic regression model
+# Create mlp model
 model = MLPClassifier(
     hidden_layer_sizes=(64, 32),
     alpha=1e-3,
     learning_rate_init=1e-3,
     early_stopping=True,
-    max_iter=200,
+    max_iter=500,
     random_state=42,
 )
 
@@ -44,7 +44,7 @@ model.fit(x_train, y_train)
 pred = model.predict(x_test)
 proba = model.predict_proba(x_test)[:, 1]
 
-# Export predection results into table
+# Save prediction results into table
 out = pd.DataFrame(
     [
         {
@@ -62,3 +62,7 @@ path = save_metrics_csv(out, "6_mlp_metrics.csv")
 
 # Print confirmation
 print(f"Saved MLP metrics: {path}")
+
+# Save trained model and print confirmation
+model_path = save_model(model, "r1_mlp.joblib")
+print(f"Saved MLP model: {model_path}")

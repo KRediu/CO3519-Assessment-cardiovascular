@@ -1,7 +1,7 @@
 # Change python behavior
 from __future__ import annotations
 
-# Standart library imports
+# Standard library imports
 import argparse
 import subprocess
 import sys
@@ -64,7 +64,7 @@ sequence = [
     src / "7_hist_gradient_boosting.py",
     src / "8_hyperparameter_tuning.py",
     src / "9_results_comparison.py",
-    src / "10_round_delta_report.py",
+    src / "10_expirimental_comparison.py",
     src / "11_visualizations.py",
 ]
 

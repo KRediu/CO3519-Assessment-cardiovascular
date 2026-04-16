@@ -8,7 +8,7 @@ from sklearn.metrics import accuracy_score, f1_score, roc_auc_score
 from sklearn.model_selection import StratifiedKFold, cross_validate
 
 # Custom imports
-from utils import load_processed_data, save_metrics_csv
+from utils import load_processed_data, save_metrics_csv, save_model
 
 
 # Load train and test data
@@ -18,6 +18,7 @@ x_train, x_test, y_train, y_test = load_processed_data()
 model = LogisticRegression(
     max_iter=2000, 
     class_weight="balanced", 
+    solver="lbfgs",
     random_state=42
 )
 
@@ -36,7 +37,7 @@ model.fit(x_train, y_train)
 pred = model.predict(x_test)
 proba = model.predict_proba(x_test)[:, 1]
 
-# Export predection results into table
+# Save prediction results into table
 out = pd.DataFrame(
     [
         {
@@ -54,3 +55,7 @@ path = save_metrics_csv(out, "5_logistic_regression_metrics.csv")
 
 # Print confirmation
 print(f"Saved logistic metrics: {path}")
+
+# Save trained model and print confirmation
+model_path = save_model(model, "r1_logistic_regression.joblib")
+print(f"Saved Logistic Regression model: {model_path}")

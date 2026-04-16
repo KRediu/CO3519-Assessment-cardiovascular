@@ -8,7 +8,7 @@ from sklearn.metrics import accuracy_score, f1_score, roc_auc_score
 from sklearn.model_selection import StratifiedKFold, cross_validate
 
 # Custom imports
-from utils import load_processed_data, save_metrics_csv
+from utils import load_processed_data, save_metrics_csv, save_model
 
 
 # Load train and test data
@@ -44,7 +44,7 @@ model.fit(x_train, y_train)
 pred = model.predict(x_test)
 proba = model.predict_proba(x_test)[:, 1]
 
-# Export predection results into table
+# Save prediction results into table
 out = pd.DataFrame(
     [
         {
@@ -60,5 +60,9 @@ out = pd.DataFrame(
 )
 path = save_metrics_csv(out, "4_random_forest_metrics.csv")
 
-# Print confirmation
+# Print Confirmation
 print(f"Saved RF metrics: {path}")
+
+# Save trained model and print confirmation
+model_path = save_model(model, "r1_random_forest.joblib")
+print(f"Saved Random Forest model: {model_path}")

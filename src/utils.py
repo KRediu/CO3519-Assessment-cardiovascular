@@ -1,13 +1,15 @@
 ﻿# Change python behavior
 from __future__ import annotations
 
-# Standart library imports
+# Standard library imports
 from pathlib import Path
 from typing import Dict, Tuple
 
 # General library imports
+import joblib
 import numpy as np
 import pandas as pd
+from sklearn.base import BaseEstimator
 from sklearn.compose import ColumnTransformer
 from sklearn.impute import SimpleImputer
 from sklearn.pipeline import Pipeline
@@ -27,13 +29,16 @@ RESULTS_DIR = PROJECT_ROOT / "results"
 METRICS_DIR = RESULTS_DIR / "metrics"
 FIGURES_DIR = RESULTS_DIR / "figures"
 
+# Models directory
+MODELS_DIR = PROJECT_ROOT / "models"
+
 # Default dataset file
 DEFAULT_RAW = RAW_DIR / "cardio_train.csv"
 
 
 # Ensures the directories exist
 def ensure_dirs() -> None:
-    for d in [RAW_DIR, PROCESSED_DIR, RESULTS_DIR, METRICS_DIR, FIGURES_DIR]:
+    for d in [RAW_DIR, PROCESSED_DIR, RESULTS_DIR, METRICS_DIR, FIGURES_DIR, MODELS_DIR]:
         d.mkdir(parents=True, exist_ok=True)
 
 
@@ -50,7 +55,7 @@ def load_raw_cardio() -> pd.DataFrame:
 
 
 # Load train and test data
-def load_processed_data():
+def load_processed_data() -> Tuple[np.ndarray, np.ndarray, np.ndarray, np.ndarray]:
     x_train = np.load(PROCESSED_DIR / "X_train.npy")
     x_test = np.load(PROCESSED_DIR / "X_test.npy")
     y_train = np.load(PROCESSED_DIR / "y_train.npy")
@@ -133,7 +138,7 @@ def build_preprocessor(x_train: pd.DataFrame) -> ColumnTransformer:
 # Create a smaller dataset while keeping class balance
 def stratified_subsample(
     x: np.ndarray, y: np.ndarray, max_points: int, random_state: int
-) -> tuple[np.ndarray, np.ndarray]:
+) -> Tuple[np.ndarray, np.ndarray]:
     if len(y) <= max_points:
         return x, y
     sss = StratifiedShuffleSplit(n_splits=1, train_size=max_points, random_state=random_state)
@@ -147,3 +152,34 @@ def save_metrics_csv(df: pd.DataFrame, filename: str) -> Path:
     path = METRICS_DIR / filename
     df.to_csv(path, index=False)
     return path
+
+
+# Saves model as joblib files
+def save_model(model: BaseEstimator, modelname: str) -> Path:
+    ensure_dirs()
+    path = MODELS_DIR / modelname
+    joblib.dump(model, path)
+    return path
+
+
+# Loads model from joblib files
+def load_model(filename: str) -> BaseEstimator:
+    path = MODELS_DIR / filename
+    return joblib.load(path)
+
+
+# Load trained models from previous steps per round
+def load_models_by_round() -> Tuple[dict[str, BaseEstimator], dict[str, BaseEstimator]]:
+    r1 = {
+        "Random Forest": load_model("r1_random_forest.joblib"),
+        "Logistic Regression": load_model("r1_logistic_regression.joblib"),
+        "MLP": load_model("r1_mlp.joblib"),
+        "HistGradientBoosting": load_model("r1_hist_gradient_boosting.joblib"),
+    }
+    r2 = {
+        "Random Forest": load_model("r2_random_forest.joblib"),
+        "Logistic Regression": load_model("r2_logistic_regression.joblib"),
+        "MLP": load_model("r2_mlp.joblib"),
+        "HistGradientBoosting": load_model("r2_hist_gradient_boosting.joblib"),
+    }
+    return r1, r2

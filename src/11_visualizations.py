@@ -4,55 +4,42 @@ from __future__ import annotations
 # General library imports
 import matplotlib.pyplot as plt
 import seaborn as sns
-from sklearn.ensemble import HistGradientBoostingClassifier, RandomForestClassifier
-from sklearn.linear_model import LogisticRegression
 from sklearn.metrics import auc, confusion_matrix, precision_recall_curve, roc_curve
-from sklearn.neural_network import MLPClassifier
 
 # Custom imports
-from utils import FIGURES_DIR, load_processed_data, clean_cardio, ensure_dirs, load_raw_cardio
+from utils import FIGURES_DIR, load_processed_data, clean_cardio, ensure_dirs, load_raw_cardio, load_models_by_round
 
 
-# Create the models to be reused
-def model_dict() -> dict[str, object]:
-    return {
-        "Logistic Regression": LogisticRegression(
-            max_iter=2000, 
-            class_weight="balanced", 
-            random_state=42
-        ),
-        "Random Forest": RandomForestClassifier(
-            n_estimators=300,
-            max_depth=10,
-            min_samples_leaf=15,
-            class_weight="balanced",
-            n_jobs=-1,
-            random_state=42,
-        ),
-        "MLP": MLPClassifier(
-            hidden_layer_sizes=(64, 32),
-            alpha=1e-3,
-            learning_rate_init=1e-3,
-            early_stopping=True,
-            max_iter=200,
-            random_state=42,
-        ),
-        "HistGradientBoosting": HistGradientBoostingClassifier(
-            max_depth=6,
-            min_samples_leaf=30,
-            learning_rate=0.05,
-            l2_regularization=1.0,
-            random_state=42,
-        ),
-    }
+# Evaluate the trained models on same data
+def evaluate_models(models, x_test, y_test):
+    roc_data = {}
+    pr_data = {}
+    cms = {}
+
+    for name, model in models.items():
+        y_proba = model.predict_proba(x_test)[:, 1]
+        y_pred = model.predict(x_test)
+
+        fpr, tpr, _ = roc_curve(y_test, y_proba)
+        precision, recall, _ = precision_recall_curve(y_test, y_proba)
+
+        roc_data[name] = (fpr, tpr, auc(fpr, tpr))
+        pr_data[name] = (recall, precision, auc(recall, precision))
+        cms[name] = confusion_matrix(y_test, y_pred, labels=[0, 1])
+
+    return roc_data, pr_data, cms
 
 
-# Create plot showing class balance (how balanced the dataset is based on targets)
+# Create single class balance plot
 def plot_class_balance() -> None:
     df = clean_cardio(load_raw_cardio())
     counts = df["cardio"].value_counts().sort_index()
     plt.figure(figsize=(6, 4))
-    sns.barplot(x=["No disease (0)", "Disease (1)"], y=counts.values, color="#4C72B0")
+    sns.barplot(
+        x=["No disease (0)", "Disease (1)"],
+        y=counts.values,
+        color="#4C72B0",
+    )
     plt.title("Class Balance (Cleaned Data)")
     plt.ylabel("Count")
     plt.tight_layout()
@@ -60,7 +47,7 @@ def plot_class_balance() -> None:
     plt.close()
 
 
-# Create plot showing correlation heatmap
+# Create single correlation heatmap plot
 def plot_correlation_heatmap() -> None:
     df = clean_cardio(load_raw_cardio()).copy()
     df["age_years"] = df["age"] / 365.25
@@ -76,7 +63,7 @@ def plot_correlation_heatmap() -> None:
         "gluc",
         "cardio",
     ]
-    corr = df[cols].corr(numeric_only=True)
+    corr = df[cols].corr()
     plt.figure(figsize=(9, 7))
     sns.heatmap(corr, cmap="coolwarm", center=0.0, square=True)
     plt.title("Correlation Heatmap (Selected Features)")
@@ -85,53 +72,44 @@ def plot_correlation_heatmap() -> None:
     plt.close()
 
 
-# Create plots (roc curves, precision–recall curves, and confusion matrices)
-def plot_roc_pr_and_confusion() -> None:
-    # Load train and test data
-    x_train, x_test, y_train, y_test = load_processed_data()
-
-    models = model_dict()
-    roc_data = {}
-    pr_data = {}
-    cms = {}
-
-    for name, model in models.items():
-        model.fit(x_train, y_train)
-        y_proba = model.predict_proba(x_test)[:, 1]
-        y_pred = model.predict(x_test)
-
-        fpr, tpr, _ = roc_curve(y_test, y_proba)
-        precision, recall, _ = precision_recall_curve(y_test, y_proba)
-        roc_data[name] = (fpr, tpr, auc(fpr, tpr))
-        pr_data[name] = (recall, precision, auc(recall, precision))
-        cms[name] = confusion_matrix(y_test, y_pred, labels=[1, 0])
-
+# Create single roc curves plots 
+def plot_roc(items, title, filename):
     plt.figure(figsize=(7, 6))
-    for name, (fpr, tpr, roc_auc) in roc_data.items():
+    for name, (fpr, tpr, roc_auc) in items:
         plt.plot(fpr, tpr, label=f"{name} (AUC={roc_auc:.3f})")
+
     plt.plot([0, 1], [0, 1], "k--", linewidth=1)
     plt.xlabel("False Positive Rate")
     plt.ylabel("True Positive Rate")
-    plt.title("ROC Curves")
+    plt.title(title)
     plt.legend(loc="lower right", fontsize=9)
     plt.tight_layout()
-    plt.savefig(FIGURES_DIR / "roc_curves.png", dpi=150)
+    plt.savefig(FIGURES_DIR / filename, dpi=150)
     plt.close()
 
+
+# Create single pr plots
+def plot_roc(items, title, filename):
     plt.figure(figsize=(7, 6))
-    for name, (recall, precision, pr_auc) in pr_data.items():
+    for name, (recall, precision, pr_auc) in items:
         plt.plot(recall, precision, label=f"{name} (AUC={pr_auc:.3f})")
+
     plt.xlabel("Recall")
     plt.ylabel("Precision")
-    plt.title("Precision-Recall Curves")
+    plt.title(title)
     plt.legend(loc="lower left", fontsize=9)
     plt.tight_layout()
-    plt.savefig(FIGURES_DIR / "pr_curves.png", dpi=150)
+    plt.savefig(FIGURES_DIR / filename, dpi=150)
     plt.close()
 
+
+
+# Create single confusion matrix plots
+def plot_confusion_matrices(cms, title, filename):
     fig, axes = plt.subplots(2, 2, figsize=(10, 8))
     axes = axes.ravel()
-    for i, (name, cm) in enumerate(cms.items()):
+    fig.suptitle(title)
+    for i, (name, cm) in enumerate(cms):
         sns.heatmap(
             cm,
             annot=True,
@@ -139,18 +117,39 @@ def plot_roc_pr_and_confusion() -> None:
             cmap="Blues",
             cbar=False,
             ax=axes[i],
-            xticklabels=["1", "0"],
-            yticklabels=["1", "0"],
+            xticklabels=["0", "1"],
+            yticklabels=["0", "1"],
         )
         axes[i].set_title(name)
         axes[i].set_xlabel("Predicted")
         axes[i].set_ylabel("Actual")
-        axes[i].xaxis.set_label_position("top")
-        axes[i].xaxis.tick_top()
-        axes[i].tick_params(axis="x", bottom=False, top=True)
+
     plt.tight_layout()
-    plt.savefig(FIGURES_DIR / "confusion_matrices.png", dpi=150)
+    plt.savefig(FIGURES_DIR / filename, dpi=150)
     plt.close()
+
+
+# Create all r1 & r2 plots (roc curves, precision–recall curves, and confusion matrices)
+def plots_per_round() -> None:
+    # Load data and models
+    _, x_test, _, y_test = load_processed_data()
+    r1_models, r2_models = load_models_by_round()
+
+    # Evaluate both rounds
+    roc_r1, pr_r1, cm_r1 = evaluate_models(r1_models, x_test, y_test)
+    roc_r2, pr_r2, cm_r2 = evaluate_models(r2_models, x_test, y_test)
+
+    # Create ROC curves plot round 1 & 2
+    plot_roc(roc_r1.items(), "ROC Curves - Round 1", "roc_curves_r1.png")
+    plot_roc(roc_r2.items(), "ROC Curves - Round 2", "roc_curves_r2.png")
+
+    # Create precision–recall curves plot round 1 & 2
+    plot_roc(pr_r1.items(), "Precision-Recall Curves - Round 1", "pr_curves_r1.png")
+    plot_roc(pr_r2.items(), "Precision-Recall Curves - Round 2", "pr_curves_r2.png")
+
+    # Create confusion matrices plots round 1 & 2
+    plot_confusion_matrices(cm_r1.items(), "Confusion Matrices - Round 1", "confusion_matrices_r1.png")
+    plot_confusion_matrices(cm_r2.items(), "Confusion Matrices - Round 2", "confusion_matrices_r2.png")
 
 
 # Ensure the directories exist
@@ -159,7 +158,7 @@ ensure_dirs()
 # Create and save plots
 plot_class_balance()
 plot_correlation_heatmap()
-plot_roc_pr_and_confusion()
+plots_per_round()
 
 # Print confirmation
 print(f"Saved visualizations to: {FIGURES_DIR}")

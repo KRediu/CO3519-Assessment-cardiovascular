@@ -17,7 +17,7 @@ Dataset: cardio_train.csv, binary target cardio (0/1).
 
 9_results_comparison.py: combines round-1 model csvs and tuned csv (if present) into 9_model_comparison.csv.
 
-10_round_delta_report.py: compares round_1 vs round_2_tuned by model and writes delta metrics.
+10_expirimental_comparison.py: compares round_1 vs round_2_tuned by model and writes delta metrics.
 
 11_visualizations.py: class balance, correlation heatmap, ROC, PR, confusion matrices.
 

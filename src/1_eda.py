@@ -11,7 +11,7 @@ from utils import clean_cardio, data_audit, ensure_dirs, load_raw_cardio, save_m
 # Ensure the directories exist
 ensure_dirs()
 
-# Load raw data, perform quality checks, clean the data and perfomrm quality checks again
+# Load raw data, perform quality checks, clean the data and perform quality checks again
 df = load_raw_cardio()
 raw = data_audit(df)
 cleaned = clean_cardio(df)

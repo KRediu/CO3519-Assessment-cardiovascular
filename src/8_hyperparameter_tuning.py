@@ -1,7 +1,7 @@
 # Change python behavior
 from __future__ import annotations
 
-# Standart library imports
+# Standard library imports
 import json
 
 # General library imports
@@ -14,7 +14,7 @@ from sklearn.model_selection import RandomizedSearchCV, StratifiedKFold
 from sklearn.neural_network import MLPClassifier
 
 # Custom imports
-from utils import METRICS_DIR, load_processed_data, save_metrics_csv
+from utils import METRICS_DIR, load_processed_data, save_metrics_csv, save_model
 
 
 def evaluate(model, x_test: np.ndarray, y_test: np.ndarray) -> tuple[float, float, float]:
@@ -99,7 +99,7 @@ search_space = {
 rows: list[dict] = []
 best_params: dict[str, dict] = {}
 
-# For each ML model, does hyperparameter turning and evaluates
+# For each ML model, do hyperparameter turning, evaluate and save model
 for model_name, (base_model, param_dist, n_iter) in search_space.items():
     search = RandomizedSearchCV(
         estimator=base_model,
@@ -132,6 +132,8 @@ for model_name, (base_model, param_dist, n_iter) in search_space.items():
         for k, v in search.best_params_.items()
     }
     print(f"{model_name}: best cv auc={search.best_score_:.4f}, test auc={test_auc:.4f}")
+    model_path = save_model(best, f"r2_{model_name}.joblib")
+    print(f"Saved {model_name}: {model_path}")
 
 # Save hyperparameter tuning results into a table and a json file
 tuned_df = pd.DataFrame(rows).sort_values("test_auc", ascending=False)
