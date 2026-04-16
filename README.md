@@ -44,7 +44,6 @@ CO3519-Assessment-cardiovascular/
 |           |____ 10_round_delta_report.csv
 |
 |____ src/
-|     |____ __pycache__/
 |     |____ 1_eda.py
 |     |____ 2_preprocessing.py
 |     |____ 3_umap_visualization.py
