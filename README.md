@@ -2,7 +2,7 @@
 
 ## Structure
 
-```powershell
+```text
 CO3519-Assessment-cardiovascular/
 |____ data/
 |     |____ processed/
