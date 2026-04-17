@@ -1,9 +1,14 @@
 # Change python behavior
 from __future__ import annotations
 
+# Standard library imports
+from typing import Tuple
+
 # General library imports
 import matplotlib.pyplot as plt
+import numpy as np
 import seaborn as sns
+from sklearn.base import BaseEstimator
 from sklearn.metrics import auc, confusion_matrix, precision_recall_curve, roc_curve
 
 # Custom imports
@@ -11,7 +16,9 @@ from utils import FIGURES_DIR, load_processed_data, clean_cardio, ensure_dirs, l
 
 
 # Evaluate the trained models on same data
-def evaluate_models(models, x_test, y_test):
+def evaluate_models(
+        models: dict[str, BaseEstimator], x_test: np.ndarray, y_test: np.ndarray
+    ) -> Tuple[dict, dict, dict]:
     roc_data = {}
     pr_data = {}
     cms = {}
@@ -73,9 +80,9 @@ def plot_correlation_heatmap() -> None:
 
 
 # Create single roc curves plots 
-def plot_roc(items, title, filename):
+def plot_roc(data: dict, title: str, filename: str):
     plt.figure(figsize=(7, 6))
-    for name, (fpr, tpr, roc_auc) in items:
+    for name, (fpr, tpr, roc_auc) in data.items():
         plt.plot(fpr, tpr, label=f"{name} (AUC={roc_auc:.3f})")
 
     plt.plot([0, 1], [0, 1], "k--", linewidth=1)
@@ -89,9 +96,9 @@ def plot_roc(items, title, filename):
 
 
 # Create single pr plots
-def plot_roc(items, title, filename):
+def plot_pr(data: dict, title: str, filename: str):
     plt.figure(figsize=(7, 6))
-    for name, (recall, precision, pr_auc) in items:
+    for name, (recall, precision, pr_auc) in data.items():
         plt.plot(recall, precision, label=f"{name} (AUC={pr_auc:.3f})")
 
     plt.xlabel("Recall")
@@ -105,11 +112,11 @@ def plot_roc(items, title, filename):
 
 
 # Create single confusion matrix plots
-def plot_confusion_matrices(cms, title, filename):
+def plot_confusion_matrices(data: dict, title: str, filename: str):
     fig, axes = plt.subplots(2, 2, figsize=(10, 8))
     axes = axes.ravel()
     fig.suptitle(title)
-    for i, (name, cm) in enumerate(cms):
+    for i, (name, cm) in enumerate(data.items()):
         sns.heatmap(
             cm,
             annot=True,
@@ -140,16 +147,16 @@ def plots_per_round() -> None:
     roc_r2, pr_r2, cm_r2 = evaluate_models(r2_models, x_test, y_test)
 
     # Create ROC curves plot round 1 & 2
-    plot_roc(roc_r1.items(), "ROC Curves - Round 1", "roc_curves_r1.png")
-    plot_roc(roc_r2.items(), "ROC Curves - Round 2", "roc_curves_r2.png")
+    plot_roc(roc_r1, "ROC Curves - Round 1", "roc_curves_r1.png")
+    plot_roc(roc_r2, "ROC Curves - Round 2", "roc_curves_r2.png")
 
     # Create precision–recall curves plot round 1 & 2
-    plot_roc(pr_r1.items(), "Precision-Recall Curves - Round 1", "pr_curves_r1.png")
-    plot_roc(pr_r2.items(), "Precision-Recall Curves - Round 2", "pr_curves_r2.png")
+    plot_pr(pr_r1, "Precision-Recall Curves - Round 1", "pr_curves_r1.png")
+    plot_pr(pr_r2, "Precision-Recall Curves - Round 2", "pr_curves_r2.png")
 
     # Create confusion matrices plots round 1 & 2
-    plot_confusion_matrices(cm_r1.items(), "Confusion Matrices - Round 1", "confusion_matrices_r1.png")
-    plot_confusion_matrices(cm_r2.items(), "Confusion Matrices - Round 2", "confusion_matrices_r2.png")
+    plot_confusion_matrices(cm_r1, "Confusion Matrices - Round 1", "confusion_matrices_r1.png")
+    plot_confusion_matrices(cm_r2, "Confusion Matrices - Round 2", "confusion_matrices_r2.png")
 
 
 # Ensure the directories exist
