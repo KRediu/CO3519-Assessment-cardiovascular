@@ -13,7 +13,7 @@ from sklearn.base import BaseEstimator
 from sklearn.compose import ColumnTransformer
 from sklearn.impute import SimpleImputer
 from sklearn.pipeline import Pipeline
-from sklearn.preprocessing import OneHotEncoder, StandardScaler
+from sklearn.preprocessing import OneHotEncoder, StandardScaler, PolynomialFeatures
 from sklearn.model_selection import StratifiedShuffleSplit
 
 
@@ -102,6 +102,18 @@ def feature_engineer(df: pd.DataFrame) -> Tuple[pd.DataFrame, pd.Series]:
         x = x.drop(columns=["id"])
     x["age_years"] = x["age"] / 365.25
     x["bmi"] = x["weight"] / ((x["height"] / 100.0) ** 2)
+    x["pulse_pressure"] = x["ap_hi"] - x["ap_lo"]
+    x["map"] = x["ap_lo"] + x["pulse_pressure"] / 3 # Mean arterial pressure
+    x["bp_ratio"] = x["ap_hi"] / x["ap_lo"]
+    # polynomial features after basic features added
+    poly = PolynomialFeatures(degree=2, interaction_only=True, include_bias=False)
+    interaction_cols = ["age_years", "bmi", "ap_hi", "ap_lo", "cholesterol", "gluc"]
+    poly_features = poly.fit_transform(x[interaction_cols])
+    poly_feature_names = poly.get_feature_names_out(interaction_cols)
+    poly_df = pd.DataFrame(poly_features, columns=poly_feature_names, index=x.index)
+    # drop original ones
+    x = x.drop(columns=interaction_cols)
+    x = pd.concat([x, poly_df], axis=1)
     return x, y
 
 
@@ -183,3 +195,7 @@ def load_models_by_round() -> Tuple[dict[str, BaseEstimator], dict[str, BaseEsti
         "HistGradientBoosting": load_model("r2_hist_gradient_boosting.joblib"),
     }
     return r1, r2
+
+# Load stacking model    
+def load_stacking_model() -> BaseEstimator:
+    return load_model("stacking.joblib")

@@ -1,0 +1,2 @@
+model,round,best_k,train_silhouette,train_inertia,test_ari,test_nmi
+kmeans,exploratory,2,0.32597312453757554,1235807.3465996261,0.0703909929525848,0.0749865714956344

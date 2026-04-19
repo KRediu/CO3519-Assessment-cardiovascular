@@ -63,16 +63,18 @@ sequence = [
     src / "6_mlp.py",
     src / "7_hist_gradient_boosting.py",
     src / "8_hyperparameter_tuning.py",
-    src / "9_results_comparison.py",
-    src / "10_expirimental_comparison.py",
-    src / "11_visualizations.py",
+    src / "9_stacking.py",
+    src / "10_results_comparison.py",
+    src / "11_expirimental_comparison.py",
+    src / "12_visualizations.py",
+    src / "13_kmeans.py",
 ]
 
 # Based on arguments provided, skip certain files
 if args.skip_umap:
     sequence = [s for s in sequence if s.name != "3_umap_visualization.py"]
 if args.skip_visuals:
-    sequence = [s for s in sequence if s.name != "11_visualizations.py"]
+    sequence = [s for s in sequence if s.name != "12_visualizations.py"]
 
 # Run remaining sequence files
 for script in sequence:

@@ -20,6 +20,7 @@ Dataset: cardio_train.csv, binary target cardio (0/1).
 10_expirimental_comparison.py: compares round_1 vs round_2_tuned by model and writes delta metrics.
 
 11_visualizations.py: class balance, correlation heatmap, ROC, PR, confusion matrices.
+12_kmeans.py: exploratory K-Means clustering, best-k search, cluster profile, and PCA plot.
 
 run_pipeline.py: full orchestrator, clears generated outputs first, runs numbered scripts in order, optional skip flags.
 

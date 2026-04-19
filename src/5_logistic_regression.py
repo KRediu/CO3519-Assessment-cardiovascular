@@ -3,6 +3,7 @@ from __future__ import annotations
 
 # General library imports
 import pandas as pd
+import numpy as np 
 from sklearn.linear_model import LogisticRegression
 from sklearn.metrics import accuracy_score, f1_score, roc_auc_score
 from sklearn.model_selection import StratifiedKFold, cross_validate
@@ -32,10 +33,18 @@ cv_out = cross_validate(
     model, x_train, y_train, cv=cv, scoring=["accuracy", "f1", "roc_auc"], n_jobs=-1
 )
 
-# Train the model and predict
+# Train the model
 model.fit(x_train, y_train)
-pred = model.predict(x_test)
+
+# Find optimal threshold
+train_proba = model.predict_proba(x_train)[:, 1]
+thresholds = np.linspace(0.01, 0.99, 99)
+f1_scores = [f1_score(y_train, (train_proba >= t).astype(int)) for t in thresholds]
+best_threshold = thresholds[np.argmax(f1_scores)]
+
+# Use optimal threshold
 proba = model.predict_proba(x_test)[:, 1]
+pred = (proba >= best_threshold).astype(int)
 
 # Save prediction results into table
 out = pd.DataFrame(
