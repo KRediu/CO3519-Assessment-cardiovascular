@@ -67,4 +67,4 @@ plt.close()
 
 # Print confirmation and umap dataset
 print(f"Saved UMAP figure: {FIGURES_DIR / '3_umap_projection.png'}")
-print(f"Saved embedding data: {FIGURES_DIR / '3_umap_embedding_sample.csv'}")
+print(f"Saved embedding data: {METRICS_DIR / '3_umap_embedding_sample.csv'}")
