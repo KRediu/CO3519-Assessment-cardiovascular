@@ -9,8 +9,9 @@ from sklearn.cluster import KMeans
 from sklearn.decomposition import PCA
 from sklearn.metrics import adjusted_rand_score, normalized_mutual_info_score, silhouette_score, calinski_harabasz_score
 from sklearn.mixture import GaussianMixture
-from sklearn.preprocessing import StandardScaler
+from sklearn.preprocessing import RobustScaler
 from sklearn.model_selection import StratifiedShuffleSplit
+from sklearn.feature_selection import SelectKBest, mutual_info_classif
 
 # Custom imports
 from utils import FIGURES_DIR, METRICS_DIR, ensure_dirs, load_processed_data, save_metrics_csv, save_model
@@ -34,15 +35,19 @@ x_train, x_test, y_train, y_test = load_processed_data()
 print(f"Train shape: {x_train.shape}, test shape: {x_test.shape}")
 
 # Standardize features
-scaler = StandardScaler()
+scaler = RobustScaler()
 x_train_scaled = scaler.fit_transform(x_train)
 x_test_scaled = scaler.transform(x_test)
 
+# Select top features that predict disease (using training labels)
+selector = SelectKBest(mutual_info_classif, k=30)
+x_train_selected = selector.fit_transform(x_train_scaled, y_train)
+x_test_selected = selector.transform(x_test_scaled)
+
 # PCA
-pca = PCA(n_components=0.95, random_state=42)
-x_train_pca = pca.fit_transform(x_train_scaled)
-x_test_pca = pca.transform(x_test_scaled)
-print(f"PCA reduced dimensions from {x_train_scaled.shape[1]} to {x_train_pca.shape[1]}")
+pca = PCA(n_components=0.90, random_state=42)
+x_train_pca = pca.fit_transform(x_train_selected)
+x_test_pca = pca.transform(x_test_selected)
 
 x_cluster = x_train_pca
 x_test_cluster = x_test_pca
@@ -51,7 +56,7 @@ x_test_cluster = x_test_pca
 search_idx = stratified_sample_indices(y_train, max_points=min(5000, len(y_train)), random_state=42)
 x_search = x_cluster[search_idx]
 
-candidate_ks = range(2, 7)
+candidate_ks = range(2, 10)
 search_rows: list[dict] = []
 inertias = []
 silhouettes = []
@@ -83,9 +88,14 @@ for k in candidate_ks:
     )
     print(f"  k={k}: silhouette={sil:.4f}, inertia={model.inertia_:.1f}, CH={ch:.1f}")
 
-# Choose k based on silhouette (or you could use a combined rule)
-best_k = candidate_ks[np.argmax(silhouettes)]
-print(f"Best k selected (max silhouette): {best_k}")
+# Compute second differences (discrete curvature)
+diff1 = np.diff(inertias)
+diff2 = np.diff(diff1)
+
+# Elbow is where curvature is largest
+best_k = candidate_ks[np.argmax(diff2) + 1]
+
+print(f"Best k selected (approx elbow): {best_k}")
 
 # Plot elbow and silhoute for manual inspection
 fig, (ax1, ax2) = plt.subplots(1, 2, figsize=(12, 4))
@@ -106,7 +116,7 @@ plt.close()
 final_model = KMeans(
     n_clusters=best_k,
     init="k-means++",
-    n_init=25,
+    n_init=500,
     max_iter=300,
     random_state=42,
 )
