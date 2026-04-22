@@ -98,20 +98,25 @@ def clean_cardio(df: pd.DataFrame) -> pd.DataFrame:
 def feature_engineer(df: pd.DataFrame) -> Tuple[pd.DataFrame, pd.Series]:
     x = df.drop(columns=["cardio"]).copy()
     y = df["cardio"].astype(int).copy()
+
     if "id" in x.columns:
         x = x.drop(columns=["id"])
+
+    # Base features
     x["age_years"] = x["age"] / 365.25
     x["bmi"] = x["weight"] / ((x["height"] / 100.0) ** 2)
     x["pulse_pressure"] = x["ap_hi"] - x["ap_lo"]
     x["map"] = x["ap_lo"] + x["pulse_pressure"] / 3 # Mean arterial pressure
     x["bp_ratio"] = x["ap_hi"] / x["ap_lo"]
-    # polynomial features after basic features added
+    
+    # Polynomial features after basic features added
     poly = PolynomialFeatures(degree=2, interaction_only=True, include_bias=False)
     interaction_cols = ["age_years", "bmi", "ap_hi", "ap_lo", "cholesterol", "gluc"]
     poly_features = poly.fit_transform(x[interaction_cols])
     poly_feature_names = poly.get_feature_names_out(interaction_cols)
     poly_df = pd.DataFrame(poly_features, columns=poly_feature_names, index=x.index)
-    # drop original ones
+    
+    # Drop original ones
     x = x.drop(columns=interaction_cols)
     x = pd.concat([x, poly_df], axis=1)
     return x, y
