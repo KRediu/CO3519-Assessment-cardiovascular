@@ -35,10 +35,11 @@ def run_script(script_path: Path) -> None:
 def clear_generated_outputs(root: Path) -> None:
     print("Clearing generated files for a fresh run...")
     processed = root / "data" / "processed"
+    models = root / "models"
     metrics = root / "results" / "metrics"
     figures = root / "results" / "figures"
 
-    for folder in [processed, metrics, figures]:
+    for folder in [processed, models, metrics, figures]:
         folder.mkdir(parents=True, exist_ok=True)
         for p in folder.iterdir():
             if p.is_file():

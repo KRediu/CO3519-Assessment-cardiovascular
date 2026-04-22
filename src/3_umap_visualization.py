@@ -8,7 +8,7 @@ import pandas as pd
 import seaborn as sns
 
 # Custom imports
-from utils import FIGURES_DIR, load_processed_data, ensure_dirs, stratified_subsample
+from utils import FIGURES_DIR, METRICS_DIR, load_processed_data, ensure_dirs, stratified_subsample
 
 
 # Ensure the directories exist
@@ -43,7 +43,7 @@ emb = reducer.fit_transform(x_plot)
 
 # Convert UMAP embedding into a tables
 emb_df = pd.DataFrame({"umap_1": emb[:, 0], "umap_2": emb[:, 1], "cardio": y_plot})
-emb_df.to_csv(FIGURES_DIR / "3_umap_embedding_sample.csv", index=False)
+emb_df.to_csv(METRICS_DIR / "3_umap_embedding_sample.csv", index=False)
 
 # Save UMAP embedding as a plot
 plt.figure(figsize=(8, 6))
