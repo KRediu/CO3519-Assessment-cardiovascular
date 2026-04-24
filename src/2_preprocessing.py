@@ -4,6 +4,7 @@ from __future__ import annotations
 # General library imports
 import numpy as np
 import pandas as pd
+from imblearn.over_sampling import SMOTE
 from sklearn.model_selection import train_test_split
 
 # Custom imports
@@ -26,6 +27,11 @@ x_train, x_test, y_train, y_test = train_test_split(
 pre = build_preprocessor(x_train)
 x_train_t = pre.fit_transform(x_train)
 x_test_t = pre.transform(x_test)
+
+# SMOTE creates new minority-class samples so the model sees a balanced training distribution
+smote = SMOTE(random_state=42, k_neighbors=5)
+x_train_t, y_train_resampled = smote.fit_resample(x_train_t, y_train)
+y_train = pd.Series(y_train_resampled) 
 
 # Save ML data as .npy files for faster and more efficient save/load
 np.save(PROCESSED_DIR / "X_train.npy", x_train_t)

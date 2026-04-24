@@ -1,6 +1,10 @@
 # Change python behavior
 from __future__ import annotations
 
+# Set default cores to hide warning thrown from joblib 
+import os
+os.environ["LOKY_MAX_CPU_COUNT"] = "4"
+
 # Standard library imports
 import argparse
 import subprocess
@@ -22,6 +26,11 @@ def parse_args() -> argparse.Namespace:
         "--skip-visuals",
         action="store_true",
         help="Skip script 11 (final visualizations).",
+    )
+    parser.add_argument(
+        "--skip-dependencies",
+        action="store_true",
+        help="Skip dependencies install (pip).",
     )
     return parser.parse_args()
 
@@ -51,9 +60,6 @@ args = parse_args()
 root = Path(__file__).resolve().parent
 src = root / "src"
 
-# Clear previous run ML generated files
-clear_generated_outputs(root)
-
 # Set the files sequence
 sequence = [
     src / "1_eda.py",
@@ -76,6 +82,15 @@ if args.skip_umap:
     sequence = [s for s in sequence if s.name != "3_umap_visualization.py"]
 if args.skip_visuals:
     sequence = [s for s in sequence if s.name != "12_visualizations.py"]
+if not args.skip_dependencies:
+    print(f"\n>>> Installing dependencies <<<")
+    subprocess.run(
+        [sys.executable, "-m", "pip", "install", "-r", "requirements.txt"],
+        check=True
+    )
+
+# Clear previous run ML generated files
+clear_generated_outputs(root)
 
 # Run remaining sequence files
 for script in sequence:
