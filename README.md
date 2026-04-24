@@ -46,6 +46,7 @@ CO3519-Assessment-cardiovascular/
 |           |____ 6_mlp_metrics.csv
 |           |____ 7_hist_gradient_boosting_metrics.csv
 |           |____ 8_tuned_best_params.json
+|           |____ 8_tuned_thresholds.json
 |           |____ 8_tuned_model_metrics.csv
 |           |____ 9_stacking_metrics.csv
 |           |____ 10_model_comparison.csv
@@ -99,6 +100,7 @@ Useful flags:
 ```powershell
 python .\run_pipeline.py --skip-umap
 python .\run_pipeline.py --skip-visuals
+python .\run_pipeline.py --skip-dependencies
 ```
 
 ## Manual run order

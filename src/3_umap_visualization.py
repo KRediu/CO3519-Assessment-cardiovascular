@@ -3,9 +3,11 @@ from __future__ import annotations
 
 # General library imports
 import matplotlib.pyplot as plt
+import umap.umap_ as umap
 import numpy as np
 import pandas as pd
 import seaborn as sns
+import warnings
 
 # Custom imports
 from utils import FIGURES_DIR, METRICS_DIR, load_processed_data, ensure_dirs, stratified_subsample
@@ -13,14 +15,6 @@ from utils import FIGURES_DIR, METRICS_DIR, load_processed_data, ensure_dirs, st
 
 # Ensure the directories exist
 ensure_dirs()
-
-# User friendly error message for missing dependency
-try:
-    import umap
-except ImportError as e:
-    raise ImportError(
-        "UMAP requires 'umap-learn'. Install with: pip install umap-learn"
-    ) from e
 
 # Load train and test data
 x_train, x_test, y_train, y_test = load_processed_data()
@@ -39,7 +33,10 @@ reducer = umap.UMAP(
     n_jobs=-1,
     random_state=42
 )
-emb = reducer.fit_transform(x_plot)
+# Removes thrown warning from umap
+with warnings.catch_warnings():
+    warnings.simplefilter("ignore", UserWarning)
+    emb = reducer.fit_transform(x_plot)
 
 # Convert UMAP embedding into a tables
 emb_df = pd.DataFrame({"umap_1": emb[:, 0], "umap_2": emb[:, 1], "cardio": y_plot})

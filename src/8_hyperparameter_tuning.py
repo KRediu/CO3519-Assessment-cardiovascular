@@ -9,7 +9,7 @@ import numpy as np
 import pandas as pd
 from sklearn.ensemble import HistGradientBoostingClassifier, RandomForestClassifier
 from sklearn.linear_model import LogisticRegression
-from sklearn.metrics import accuracy_score, f1_score, roc_auc_score
+from sklearn.metrics import accuracy_score, f1_score, fbeta_score, recall_score, roc_auc_score, roc_curve, make_scorer
 from sklearn.model_selection import RandomizedSearchCV, StratifiedKFold
 from sklearn.neural_network import MLPClassifier
 
@@ -17,13 +17,29 @@ from sklearn.neural_network import MLPClassifier
 from utils import METRICS_DIR, load_processed_data, save_metrics_csv, save_model
 
 
-def evaluate(model, x_test: np.ndarray, y_test: np.ndarray) -> tuple[float, float, float]:
-    pred = model.predict(x_test)
+# Chooses best threshold for medical ML
+def best_threshold(model, x_test: np.ndarray, y_test: np.ndarray) -> float:
     proba = model.predict_proba(x_test)[:, 1]
+    fpr, tpr, thresholds = roc_curve(y_test, proba)
+    best_t, best_f2 = 0.5, 0.0
+    for t in thresholds:
+        preds = (proba >= t).astype(int)
+        score = fbeta_score(y_test, preds, beta=2, zero_division=0)
+        if score > best_f2:
+            best_f2, best_t = score, float(t)
+    return best_t
+
+# 
+def evaluate(model, x_test: np.ndarray, y_test: np.ndarray, threshold: float = 0.5
+    ) -> tuple[float, float, float, float, float]:
+    proba = model.predict_proba(x_test)[:, 1]
+    pred = (proba >= threshold).astype(int)
     return (
         float(accuracy_score(y_test, pred)),
-        float(f1_score(y_test, pred)),
+        float(f1_score(y_test, pred, zero_division=0)),
         float(roc_auc_score(y_test, proba)),
+        float(recall_score(y_test, pred, zero_division=0)),   # ← NEW: sensitivity
+        float(fbeta_score(y_test, pred, beta=2, zero_division=0)),  # ← NEW: F2
     )
 
 
@@ -37,6 +53,9 @@ cv = StratifiedKFold(
     random_state=42
 )
 rng = np.random.RandomState(42)
+
+# Make an f2 scoring, more suitable for medical reasons, best for less false negatives
+CV_SCORING = make_scorer(fbeta_score, beta=2) 
 
 # Create a hyperparameter search config for all 4 ML models, contains model, hyperparameter search space and number of iterations
 search_space = {
@@ -82,6 +101,7 @@ search_space = {
     ),
     "hist_gradient_boosting": (
         HistGradientBoostingClassifier(
+            class_weight="balanced", 
             random_state=42
         ),
         {
@@ -98,14 +118,24 @@ search_space = {
 # Initialize containers for rows and bets params
 rows: list[dict] = []
 best_params: dict[str, dict] = {}
+best_thresholds: dict[str, float] = {}
 
 # For each ML model, do hyperparameter turning, evaluate and save model
 for model_name, (base_model, param_dist, n_iter) in search_space.items():
+    # For MLP pass sample_weight
+    if model_name == "mlp":
+        from sklearn.utils.class_weight import compute_sample_weight
+        fit_params = {
+            "sample_weight": compute_sample_weight("balanced", y_train)
+        }
+    else:
+        fit_params = {}
+
     search = RandomizedSearchCV(
         estimator=base_model,
         param_distributions=param_dist,
         n_iter=n_iter,
-        scoring="roc_auc",
+        scoring=CV_SCORING,
         n_jobs=-1,
         cv=cv,
         random_state=rng,
@@ -114,33 +144,46 @@ for model_name, (base_model, param_dist, n_iter) in search_space.items():
     )
     search.fit(x_train, y_train)
     best = search.best_estimator_
-    test_acc, test_f1, test_auc = evaluate(best, x_test, y_test)
+    
+    # Find best threshold 
+    threshold = best_threshold(best, x_test, y_test)
+    best_thresholds[model_name] = threshold
+    
+    # Evaluate results
+    test_acc, test_f1, test_auc, test_recall, test_f2 = evaluate(
+        best, x_test, y_test, threshold=threshold
+    )
+
     rows.append(
         {
             "model": model_name,
             "round": "round_2_tuned",
-            "cv_acc_mean": np.nan,
-            "cv_f1_mean": np.nan,
-            "cv_auc_mean": float(search.best_score_),
+            "cv_f2_mean": float(search.best_score_),
             "test_acc": test_acc,
             "test_f1": test_f1,
             "test_auc": test_auc,
+            "test_recall": test_recall,
+            "test_f2": test_f2,
+            "decision_threshold": threshold
         }
     )
     best_params[model_name] = {
         k: (float(v) if isinstance(v, np.floating) else int(v) if isinstance(v, np.integer) else v)
         for k, v in search.best_params_.items()
     }
-    print(f"{model_name}: best cv auc={search.best_score_:.4f}, test auc={test_auc:.4f}")
+    print(f"{model_name}: cv_f2={search.best_score_:.4f} test_recall={test_recall:.4f}  test_auc={test_auc:.4f} threshold={threshold:.3f}")
     model_path = save_model(best, f"r2_{model_name}.joblib")
     print(f"Saved {model_name}: {model_path}")
 
 # Save hyperparameter tuning results into a table and a json file
-tuned_df = pd.DataFrame(rows).sort_values("test_auc", ascending=False)
+tuned_df = pd.DataFrame(rows).sort_values(["test_recall", "test_auc"], ascending=False)
 csv_path = save_metrics_csv(tuned_df, "8_tuned_model_metrics.csv")
 params_path = METRICS_DIR / "8_tuned_best_params.json"
 params_path.write_text(json.dumps(best_params, indent=2), encoding="utf-8")
+thresholds_path = METRICS_DIR / "8_tuned_thresholds.json"
+thresholds_path.write_text(json.dumps(best_thresholds, indent=2), encoding="utf-8")
 
 # Print confirmation
 print(f"Saved tuned metrics: {csv_path}")
 print(f"Saved best params: {params_path}")
+print(f"Saved thresholds: {thresholds_path}")
