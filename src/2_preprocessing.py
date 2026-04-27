@@ -5,7 +5,9 @@ from __future__ import annotations
 import numpy as np
 import pandas as pd
 from imblearn.over_sampling import SMOTE
+from sklearn.cluster import DBSCAN
 from sklearn.model_selection import train_test_split
+from sklearn.preprocessing import StandardScaler
 
 # Custom imports
 from utils import PROCESSED_DIR, build_preprocessor, clean_cardio, ensure_dirs, feature_engineer, load_raw_cardio, save_metrics_csv
@@ -22,6 +24,17 @@ x, y = feature_engineer(df)
 x_train, x_test, y_train, y_test = train_test_split(
     x, y, test_size=0.2, stratify=y, random_state=42
 )
+
+# DBSCAN filter on train data only
+dbscan_numeric_cols = x_train.select_dtypes(include=["int64", "float64"]).columns.tolist()
+dbscan_scaled_train = StandardScaler().fit_transform(x_train[dbscan_numeric_cols])
+dbscan = DBSCAN(eps=2.0, min_samples=40, n_jobs=-1)
+dbscan_labels = dbscan.fit_predict(dbscan_scaled_train)
+dbscan_keep_mask = dbscan_labels != -1
+
+x_train = x_train.iloc[dbscan_keep_mask].copy()
+y_train = y_train.iloc[dbscan_keep_mask].copy()
+dbscan_removed_rows = int((~dbscan_keep_mask).sum())
 
 # Preprocess training and test data for ML
 pre = build_preprocessor(x_train)
@@ -45,7 +58,7 @@ pd.Series(cols, name="feature").to_csv(PROCESSED_DIR / "feature_names.csv", inde
 save_metrics_csv(
     pd.DataFrame(
         [
-            {"split": "train", "rows": len(y_train), "positive_rate": float(y_train.mean())},
+            {"split": "train", "rows": len(y_train), "positive_rate": float(y_train.mean()), "dbscan_removed_rows": dbscan_removed_rows},
             {"split": "test", "rows": len(y_test), "positive_rate": float(y_test.mean())},
         ]
     ),

@@ -1,3 +1,3 @@
-split,rows,positive_rate
-train,55504,0.5
-test,13731,0.49471997669506956
+split,rows,positive_rate,dbscan_removed_rows
+train,48312,0.5,10522.0
+test,13731,0.49471997669506956,

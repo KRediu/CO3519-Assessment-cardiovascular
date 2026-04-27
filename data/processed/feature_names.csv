@@ -2,7 +2,6 @@ feature
 num__age
 num__gender
 num__height
-num__weight
 num__smoke
 num__alco
 num__active

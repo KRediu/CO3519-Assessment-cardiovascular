@@ -1,4 +1,4 @@
-﻿# Change python behavior
+# Change python behavior
 from __future__ import annotations
 
 # Standard library imports
@@ -105,6 +105,7 @@ def feature_engineer(df: pd.DataFrame) -> Tuple[pd.DataFrame, pd.Series]:
     # Base features
     x["age_years"] = x["age"] / 365.25
     x["bmi"] = x["weight"] / ((x["height"] / 100.0) ** 2)
+    x = x.drop(columns=["weight"])
     x["pulse_pressure"] = x["ap_hi"] - x["ap_lo"]
     x["map"] = x["ap_lo"] + x["pulse_pressure"] / 3 # Mean arterial pressure
     x["bp_ratio"] = x["ap_hi"] / x["ap_lo"]

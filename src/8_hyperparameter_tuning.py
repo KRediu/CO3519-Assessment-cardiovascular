@@ -29,7 +29,7 @@ def best_threshold(model, x_test: np.ndarray, y_test: np.ndarray) -> float:
             best_f2, best_t = score, float(t)
     return best_t
 
-# 
+
 def evaluate(model, x_test: np.ndarray, y_test: np.ndarray, threshold: float = 0.5
     ) -> tuple[float, float, float, float, float]:
     proba = model.predict_proba(x_test)[:, 1]
@@ -38,8 +38,8 @@ def evaluate(model, x_test: np.ndarray, y_test: np.ndarray, threshold: float = 0
         float(accuracy_score(y_test, pred)),
         float(f1_score(y_test, pred, zero_division=0)),
         float(roc_auc_score(y_test, proba)),
-        float(recall_score(y_test, pred, zero_division=0)),   # ← NEW: sensitivity
-        float(fbeta_score(y_test, pred, beta=2, zero_division=0)),  # ← NEW: F2
+        float(recall_score(y_test, pred, zero_division=0)),
+        float(fbeta_score(y_test, pred, beta=2, zero_division=0)),
     )
 
 

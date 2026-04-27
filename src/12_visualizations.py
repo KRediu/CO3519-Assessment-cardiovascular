@@ -60,7 +60,6 @@ def plot_correlation_heatmap() -> None:
     cols = [
         "age_years",
         "height",
-        "weight",
         "bmi",
         "ap_hi",
         "ap_lo",
