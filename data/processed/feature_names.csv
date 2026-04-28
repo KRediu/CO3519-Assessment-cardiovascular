@@ -1,31 +1,4 @@
 feature
-num__age
-num__gender
-num__height
-num__smoke
-num__alco
-num__active
-num__pulse_pressure
-num__map
-num__bp_ratio
-num__age_years
-num__bmi
 num__ap_hi
-num__ap_lo
 num__cholesterol
-num__gluc
-num__age_years bmi
-num__age_years ap_hi
-num__age_years ap_lo
-num__age_years cholesterol
-num__age_years gluc
-num__bmi ap_hi
-num__bmi ap_lo
-num__bmi cholesterol
-num__bmi gluc
-num__ap_hi ap_lo
-num__ap_hi cholesterol
-num__ap_hi gluc
-num__ap_lo cholesterol
-num__ap_lo gluc
-num__cholesterol gluc
+num__age_years

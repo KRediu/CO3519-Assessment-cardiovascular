@@ -37,6 +37,10 @@ CO3519-Assessment-cardiovascular/
 |     |     |____ roc_curves_r2.png
 |     |     |____ 13_kmeans_clusters.png
 |     |     |____ 13_kmeans_selection.png
+|     |     |____ 14_confusion_matrices_risk_score.png
+|     |     |____ 14_pr_curves_risk_score.png
+|     |     |____ 14_risk_score_distribution.png
+|     |     |____ 14_roc_curves_risk_score.png
 |     |
 |     |____ metrics/
 |           |____ 1_data_audit.csv
@@ -57,6 +61,7 @@ CO3519-Assessment-cardiovascular/
 |           |____ 13_kmeans_search_trace.csv
 |           |____ 13_kmeans_search_stability.csv
 |           |____ 13_kmeans_search_vs_gmm.csv
+|           |____ 14_stacking_risk_score_metrics.csv
 |
 |____ src/
 |     |____ 1_eda.py
@@ -69,9 +74,10 @@ CO3519-Assessment-cardiovascular/
 |     |____ 8_hyperparameter_tuning.py
 |	  |____ 9_stacking.py
 |     |____ 10_results_comparison.py
-|     |____ 12_experimental_comparison.py
-|     |____ 13_visualizations.py
-|     |____ 14_kmeans.py
+|     |____ 11_experimental_comparison.py
+|     |____ 12_visualizations.py
+|     |____ 13_kmeans.py
+|     |____ 14_stacking_risk_score.py
 |     |____ utils.py
 |
 |____ .gitignore

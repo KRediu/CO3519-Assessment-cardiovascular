@@ -10,7 +10,7 @@ from sklearn.model_selection import train_test_split
 from sklearn.preprocessing import StandardScaler
 
 # Custom imports
-from utils import PROCESSED_DIR, build_preprocessor, clean_cardio, ensure_dirs, feature_engineer, load_raw_cardio, save_metrics_csv
+from utils import PROCESSED_DIR, build_preprocessor, clean_cardio, ensure_dirs, feature_engineer_clean, load_raw_cardio, save_metrics_csv
 
 
 # Ensure the directories exist
@@ -18,7 +18,7 @@ ensure_dirs()
 
 # Load raw data and split features and target
 df = clean_cardio(load_raw_cardio())
-x, y = feature_engineer(df)
+x, y = feature_engineer_clean(df)
 
 # Split dataset into training and testing data (80/20)
 x_train, x_test, y_train, y_test = train_test_split(

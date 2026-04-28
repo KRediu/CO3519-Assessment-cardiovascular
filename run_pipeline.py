@@ -75,6 +75,7 @@ sequence = [
     src / "11_expirimental_comparison.py",
     src / "12_visualizations.py",
     src / "13_kmeans.py",
+    src / "14_stacking_risk_score.py",
 ]
 
 # Based on arguments provided, skip certain files

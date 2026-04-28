@@ -121,6 +121,20 @@ def feature_engineer(df: pd.DataFrame) -> Tuple[pd.DataFrame, pd.Series]:
     x = x.drop(columns=interaction_cols)
     x = pd.concat([x, poly_df], axis=1)
     return x, y
+    
+# Feature engineer with only relevant features    
+def feature_engineer_clean(df: pd.DataFrame) -> Tuple[pd.DataFrame, pd.Series]:
+    x = df.drop(columns=["cardio"]).copy()
+    y = df["cardio"].astype(int).copy()
+
+    if "id" in x.columns:
+        x = x.drop(columns=["id"])
+        
+    x["age_years"] = x["age"] / 365.25
+    
+    drop_cols = ["age", "gender", "weight", "height", "ap_lo", "gluc", "smoke", "alco", "active"]
+    x = x.drop(columns=drop_cols)
+    return x, y
 
 
 # Build preprocessing pipeline for machine learning models

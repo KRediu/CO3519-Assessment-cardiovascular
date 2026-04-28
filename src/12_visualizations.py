@@ -12,7 +12,7 @@ from sklearn.base import BaseEstimator
 from sklearn.metrics import auc, confusion_matrix, precision_recall_curve, roc_curve
 
 # Custom imports
-from utils import FIGURES_DIR, load_processed_data, clean_cardio, ensure_dirs, load_raw_cardio, load_models_by_round, load_stacking_model
+from utils import FIGURES_DIR, METRICS_DIR, load_processed_data, clean_cardio, ensure_dirs, load_raw_cardio, load_models_by_round, load_stacking_model, feature_engineer_clean
 
 
 # Evaluate the trained models on same data
@@ -73,6 +73,25 @@ def plot_correlation_heatmap() -> None:
     plt.title("Correlation Heatmap (Selected Features)")
     plt.tight_layout()
     plt.savefig(FIGURES_DIR / "correlation_heatmap.png", dpi=150)
+    plt.close()
+    
+# Create single correlation heatmap plot for relevant columns
+def plot_correlation_heatmap_clean() -> None:
+    df_raw = clean_cardio(load_raw_cardio()).copy()
+    x, y = feature_engineer_clean(df_raw)
+    df = x.copy()
+    df["cardio"] = y
+    cols = [
+        "age_years", "ap_hi", "cholesterol", "cardio"
+    ]
+    corr = df[cols].corr()
+    corr.to_csv(METRICS_DIR/"12_correlation_matrix_clean.csv")
+
+    plt.figure(figsize=(7, 7))
+    sns.heatmap(corr, cmap="coolwarm", center=0.0, square=True)
+    plt.title("Correlation Heatmap (Selected Features)")
+    plt.tight_layout()
+    plt.savefig(FIGURES_DIR / "12_correlation_heatmap_clean.png", dpi=150)
     plt.close()
 
 
@@ -174,6 +193,7 @@ ensure_dirs()
 # Create and save plots
 plot_class_balance()
 plot_correlation_heatmap()
+plot_correlation_heatmap_clean()
 plots_per_round()
 plot_stacking_comparison()
 
