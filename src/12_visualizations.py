@@ -3,6 +3,7 @@ from __future__ import annotations
 
 # Standard library imports
 from typing import Tuple
+import json
 
 # General library imports
 import matplotlib.pyplot as plt
@@ -12,19 +13,23 @@ from sklearn.base import BaseEstimator
 from sklearn.metrics import auc, confusion_matrix, precision_recall_curve, roc_curve
 
 # Custom imports
-from utils import FIGURES_DIR, load_processed_data, clean_cardio, ensure_dirs, load_raw_cardio, load_models_by_round, load_stacking_model
+from utils import FIGURES_DIR, METRICS_DIR, load_processed_data, clean_cardio, ensure_dirs, load_raw_cardio, load_models_by_round, load_stacking_model
 
 
 # Evaluate the trained models on same data
 def evaluate_models(
-    models: dict[str, BaseEstimator], x_test: np.ndarray, y_test: np.ndarray
+    models: dict[str, BaseEstimator], x_test: np.ndarray, y_test: np.ndarray,
+    thresholds: dict[str, float] | None = None
 ) -> Tuple[dict, dict, dict]:
     roc_data = {}
     pr_data = {}
     cms = {}
     for name, model in models.items():
         y_proba = model.predict_proba(x_test)[:, 1]
-        y_pred = model.predict(x_test)
+        
+        # Use saved threshold if available, else default 0.5
+        t = (thresholds or {}).get(name, 0.5)
+        y_pred = (y_proba >= t).astype(int)
 
         fpr, tpr, _ = roc_curve(y_test, y_proba)
         precision, recall, _ = precision_recall_curve(y_test, y_proba)
@@ -136,9 +141,12 @@ def plots_per_round() -> None:
     _, x_test, _, y_test = load_processed_data()
     r1_models, r2_models = load_models_by_round()
 
+    # Load saved Round 2 thresholds (Round 1 stays at 0.5)
+    r2_thresholds = json.loads((METRICS_DIR / "8_tuned_thresholds.json").read_text())
+
     # Evaluate both rounds
     roc_r1, pr_r1, cm_r1 = evaluate_models(r1_models, x_test, y_test)
-    roc_r2, pr_r2, cm_r2 = evaluate_models(r2_models, x_test, y_test)
+    roc_r2, pr_r2, cm_r2 = evaluate_models(r2_models, x_test, y_test, thresholds=r2_thresholds)
 
     # Create ROC curves plot round 1 & 2
     plot_roc(roc_r1, "ROC Curves - Round 1", "roc_curves_r1.png")
@@ -155,12 +163,16 @@ def plots_per_round() -> None:
 def plot_stacking_comparison() -> None:
     # Load data and models
     _, x_test, _, y_test = load_processed_data()
-    r1_models, r2_models = load_models_by_round()
+    _, r2_models = load_models_by_round()
     stacking_model = load_stacking_model()
     
+    # Load Round 2 thresholds and use 0.5 for stacked
+    r2_thresholds = json.loads((METRICS_DIR / "8_tuned_thresholds.json").read_text())
+    thresholds = {**r2_thresholds, "Stacking": 0.5}
+
     # Combine into one dict for evaluation
     models = {**r2_models, "Stacking": stacking_model}
-    roc_data, pr_data, cm_data = evaluate_models(models, x_test, y_test)
+    roc_data, pr_data, cm_data = evaluate_models(models, x_test, y_test, thresholds)
     
     # Plot ROC
     plot_roc(roc_data, "ROC Curves - Stacking vs. Individual Models", "roc_curves_stacking.png")

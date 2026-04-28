@@ -1,6 +1,6 @@
 {
-  "logistic_regression": 0.16501214725125665,
-  "random_forest": 0.1420896818218229,
-  "mlp": 0.15724497954500402,
-  "hist_gradient_boosting": 0.16257286495207415
+  "Logistic Regression": 0.16501214725125665,
+  "Random Forest": 0.1420896818218229,
+  "MLP": 0.15724497954500402,
+  "HistGradientBoosting": 0.16257286495207415
 }

@@ -29,7 +29,7 @@ def best_threshold(model, x_test: np.ndarray, y_test: np.ndarray) -> float:
             best_f2, best_t = score, float(t)
     return best_t
 
-# 
+# Evaluates the model (Test dataset)
 def evaluate(model, x_test: np.ndarray, y_test: np.ndarray, threshold: float = 0.5
     ) -> tuple[float, float, float, float, float]:
     proba = model.predict_proba(x_test)[:, 1]
@@ -180,8 +180,18 @@ tuned_df = pd.DataFrame(rows).sort_values(["test_recall", "test_auc"], ascending
 csv_path = save_metrics_csv(tuned_df, "8_tuned_model_metrics.csv")
 params_path = METRICS_DIR / "8_tuned_best_params.json"
 params_path.write_text(json.dumps(best_params, indent=2), encoding="utf-8")
+
+# Save best thresholds results into a json file
+KEY_MAP = {
+    "random_forest": "Random Forest",
+    "logistic_regression": "Logistic Regression",
+    "mlp": "MLP",
+    "hist_gradient_boosting": "HistGradientBoosting",
+}
 thresholds_path = METRICS_DIR / "8_tuned_thresholds.json"
-thresholds_path.write_text(json.dumps(best_thresholds, indent=2), encoding="utf-8")
+thresholds = json.loads(thresholds_path.read_text())
+renamed = {KEY_MAP[k]: v for k, v in thresholds.items()}
+thresholds_path.write_text(json.dumps(renamed, indent=2))
 
 # Print confirmation
 print(f"Saved tuned metrics: {csv_path}")

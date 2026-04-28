@@ -201,6 +201,7 @@ def load_models_by_round() -> Tuple[dict[str, BaseEstimator], dict[str, BaseEsti
     }
     return r1, r2
 
+
 # Load stacking model    
 def load_stacking_model() -> BaseEstimator:
     return load_model("stacking.joblib")
