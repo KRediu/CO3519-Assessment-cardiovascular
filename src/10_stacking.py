@@ -20,6 +20,8 @@ base_models = [
     ("hist_gb", load_model("r2_hist_gradient_boosting.joblib")),
     ("random_forest", load_model("r2_random_forest.joblib")),
     ("mlp", load_model("r2_mlp.joblib")),
+    ("xgboost", load_model("r2_xgboost.joblib")),
+    ("logistic_regression", load_model("r2_logistic_regression.joblib"))
 ]
 
 # Build stacking ensemble
@@ -95,7 +97,7 @@ out = pd.DataFrame(
         }
     ]
 )
-path = save_metrics_csv(out, "9_stacking_metrics.csv")
+path = save_metrics_csv(out, "10_stacking_metrics.csv")
 
 # Print confirmation
 print(f"Saved stacking metrics: {path}")

@@ -7,6 +7,7 @@ import json
 # General library imports
 import numpy as np
 import pandas as pd
+import xgboost as xgb
 from sklearn.ensemble import HistGradientBoostingClassifier, RandomForestClassifier
 from sklearn.linear_model import LogisticRegression
 from sklearn.metrics import accuracy_score, f1_score, fbeta_score, recall_score, roc_auc_score, roc_curve, make_scorer
@@ -42,7 +43,6 @@ def evaluate(model, x_test: np.ndarray, y_test: np.ndarray, threshold: float = 0
         float(fbeta_score(y_test, pred, beta=2, zero_division=0)),
     )
 
-
 # Load train and test data
 x_train, x_test, y_train, y_test = load_processed_data()
 
@@ -57,7 +57,10 @@ rng = np.random.RandomState(42)
 # Make an f2 scoring, more suitable for medical reasons, best for less false negatives
 CV_SCORING = make_scorer(fbeta_score, beta=2) 
 
-# Create a hyperparameter search config for all 4 ML models, contains model, hyperparameter search space and number of iterations
+# Compute scale_pos_weight for XGBoost to handle class imbalance
+scale_pos_weight = (y_train == 0).sum() / (y_train == 1).sum()
+
+# Create a hyperparameter search config for all 5 ML models, contains model, hyperparameter search space and number of iterations
 search_space = {
     "logistic_regression": (
         LogisticRegression(
@@ -113,6 +116,27 @@ search_space = {
         },
         14,
     ),
+    "xgboost": (
+        xgb.XGBClassifier(
+            scale_pos_weight=scale_pos_weight,
+            objective="binary:logistic",
+            eval_metric="logloss",
+            random_state=42,
+            n_jobs=-1,
+            verbosity=0
+        ),
+        {
+            "n_estimators": [100, 200, 300, 400],
+            "max_depth": [3, 4, 5, 6, 8],
+            "learning_rate": [0.01, 0.03, 0.05, 0.08, 0.1],
+            "subsample": [0.6, 0.8, 1.0],
+            "colsample_bytree": [0.6, 0.8, 1.0],
+            "reg_lambda": [0.0, 0.5, 1.0, 2.0, 5.0],
+            "reg_alpha": [0.0, 0.1, 0.5, 1.0],
+            "min_child_weight": [1, 5, 10, 20, 30],
+        },
+        15, 
+    )
 }
 
 # Initialize containers for rows and bets params
@@ -129,7 +153,7 @@ for model_name, (base_model, param_dist, n_iter) in search_space.items():
             "sample_weight": compute_sample_weight("balanced", y_train)
         }
     else:
-        fit_params = {}
+        fit_params = {} 
 
     search = RandomizedSearchCV(
         estimator=base_model,
@@ -177,10 +201,10 @@ for model_name, (base_model, param_dist, n_iter) in search_space.items():
 
 # Save hyperparameter tuning results into a table and a json file
 tuned_df = pd.DataFrame(rows).sort_values(["test_recall", "test_auc"], ascending=False)
-csv_path = save_metrics_csv(tuned_df, "8_tuned_model_metrics.csv")
-params_path = METRICS_DIR / "8_tuned_best_params.json"
+csv_path = save_metrics_csv(tuned_df, "9_tuned_model_metrics.csv")
+params_path = METRICS_DIR / "9_tuned_best_params.json"
 params_path.write_text(json.dumps(best_params, indent=2), encoding="utf-8")
-thresholds_path = METRICS_DIR / "8_tuned_thresholds.json"
+thresholds_path = METRICS_DIR / "9_tuned_thresholds.json"
 thresholds_path.write_text(json.dumps(best_thresholds, indent=2), encoding="utf-8")
 
 # Print confirmation

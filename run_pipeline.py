@@ -69,20 +69,21 @@ sequence = [
     src / "5_logistic_regression.py",
     src / "6_mlp.py",
     src / "7_hist_gradient_boosting.py",
-    src / "8_hyperparameter_tuning.py",
-    src / "9_stacking.py",
-    src / "10_results_comparison.py",
-    src / "11_expirimental_comparison.py",
-    src / "12_visualizations.py",
-    src / "13_kmeans.py",
-    src / "14_stacking_risk_score.py",
+    src / "8_xgboost.py",
+    src / "9_hyperparameter_tuning.py",
+    src / "10_stacking.py",
+    src / "11_results_comparison.py",
+    src / "12_experimental_comparison.py",
+    src / "13_visualizations.py",
+    src / "14_kmeans.py",
+    src / "15_stacking_risk_score.py",
 ]
 
 # Based on arguments provided, skip certain files
 if args.skip_umap:
     sequence = [s for s in sequence if s.name != "3_umap_visualization.py"]
 if args.skip_visuals:
-    sequence = [s for s in sequence if s.name != "12_visualizations.py"]
+    sequence = [s for s in sequence if s.name != "13_visualizations.py"]
 if not args.skip_dependencies:
     print(f"\n>>> Installing dependencies <<<")
     subprocess.run(

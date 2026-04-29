@@ -4,6 +4,7 @@ from __future__ import annotations
 # Standard library imports
 from pathlib import Path
 from typing import Dict, Tuple
+import json
 
 # General library imports
 import joblib
@@ -15,7 +16,6 @@ from sklearn.impute import SimpleImputer
 from sklearn.pipeline import Pipeline
 from sklearn.preprocessing import OneHotEncoder, StandardScaler, PolynomialFeatures
 from sklearn.model_selection import StratifiedShuffleSplit
-
 
 # Project root
 PROJECT_ROOT = Path(__file__).resolve().parents[1]
@@ -207,15 +207,26 @@ def load_models_by_round() -> Tuple[dict[str, BaseEstimator], dict[str, BaseEsti
         "Logistic Regression": load_model("r1_logistic_regression.joblib"),
         "MLP": load_model("r1_mlp.joblib"),
         "HistGradientBoosting": load_model("r1_hist_gradient_boosting.joblib"),
+        "XGBoost": load_model("r1_xgboost.joblib"),
     }
     r2 = {
         "Random Forest": load_model("r2_random_forest.joblib"),
         "Logistic Regression": load_model("r2_logistic_regression.joblib"),
         "MLP": load_model("r2_mlp.joblib"),
         "HistGradientBoosting": load_model("r2_hist_gradient_boosting.joblib"),
+        "XGBoost": load_model("r2_xgboost.joblib"),
     }
     return r1, r2
 
 # Load stacking model    
 def load_stacking_model() -> BaseEstimator:
     return load_model("stacking.joblib")
+    
+# Load thresholds    
+def load_thresholds():
+    thresholds_path = METRICS_DIR / "9_tuned_thresholds.json"
+    thresholds = {}
+    if thresholds_path.exists():
+        with open(thresholds_path, "r") as f:
+            thresholds = json.load(f)
+    return thresholds

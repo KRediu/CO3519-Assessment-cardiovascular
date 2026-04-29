@@ -10,11 +10,11 @@ from sklearn.decomposition import PCA
 from sklearn.metrics import adjusted_rand_score, normalized_mutual_info_score, silhouette_score, calinski_harabasz_score
 from sklearn.mixture import GaussianMixture
 from sklearn.preprocessing import RobustScaler
-from sklearn.model_selection import StratifiedShuffleSplit
+from sklearn.model_selection import StratifiedShuffleSplit, train_test_split
 from sklearn.feature_selection import SelectKBest, mutual_info_classif
 
 # Custom imports
-from utils import FIGURES_DIR, METRICS_DIR, ensure_dirs, load_processed_data, save_metrics_csv, save_model
+from utils import FIGURES_DIR, METRICS_DIR, ensure_dirs, load_processed_data, save_metrics_csv, save_model, clean_cardio, feature_engineer_clean, load_raw_cardio
 
 
 # Ensure the directories exist
@@ -29,6 +29,12 @@ def stratified_sample_indices(y: np.ndarray, max_points: int, random_state: int)
     idx, _ = next(sss.split(np.zeros(len(y)), y))
     return idx
 
+df_raw = clean_cardio(load_raw_cardio())
+x_original, y_original = feature_engineer_clean(df_raw)
+
+_, x_test_original, _, y_test_original = train_test_split(
+    x_original, y_original, test_size=0.2, stratify=y_original, random_state=42
+)
 
 print("Loading processed data...")
 x_train, x_test, y_train, y_test = load_processed_data()
@@ -109,7 +115,7 @@ ax2.set_xlabel('k')
 ax2.set_ylabel('Silhouette Score')
 ax2.set_title('Silhouette Analysis')
 plt.tight_layout()
-plt.savefig(FIGURES_DIR / "13_kmeans_selection.png", dpi=150)
+plt.savefig(FIGURES_DIR / "14_kmeans_selection.png", dpi=150)
 plt.close()
 
 # Fit the final model on the full training data.
@@ -132,12 +138,33 @@ test_ari = float(adjusted_rand_score(y_test, test_clusters))
 test_nmi = float(normalized_mutual_info_score(y_test, test_clusters))
 
 cluster_profile = (
-    pd.DataFrame({"cluster": test_clusters, "cardio": y_test})
+    pd.DataFrame({"cluster": test_clusters, "cardio": y_test, "age": x_test[:,2], "ap_hi": x_test[:,0], "cholesterol": x_test[:,1]})
     .groupby("cluster", as_index=False)
-    .agg(count=("cardio", "size"), disease_rate=("cardio", "mean"))
+    .agg(count=("cardio", "size"), disease_rate=("cardio", "mean"), age=("age", "mean"), ap_hi=("ap_hi", "mean"), cholesterol=("cholesterol", "mean"))
     .sort_values("cluster")
 )
 cluster_profile["disease_rate"] = cluster_profile["disease_rate"].astype(float)
+
+cluster_profile_actual = (
+    pd.DataFrame({
+        "cluster": test_clusters,
+        "cardio": y_test_original.values,
+        "age_years": x_test_original["age_years"].values,
+        "ap_hi": x_test_original["ap_hi"].values,
+        "cholesterol": x_test_original["cholesterol"].values,
+    })
+    .groupby("cluster", as_index=False)
+    .agg(
+        count=("cardio", "size"),
+        disease_rate=("cardio", "mean"),
+        avg_age=("age_years", "mean"),
+        avg_ap_hi=("ap_hi", "mean"),
+        avg_cholesterol=("cholesterol", "mean")
+    )
+    .sort_values("cluster")
+)
+
+cluster_profile = cluster_profile_actual
 
 summary_df = pd.DataFrame(
     [
@@ -191,12 +218,12 @@ comparison_df = pd.DataFrame([
 
 # Save outputs
 search_df = pd.DataFrame(search_rows).sort_values("sample_silhouette", ascending=False)
-summary_path = save_metrics_csv(summary_df, "13_kmeans_metrics.csv")
-search_path = save_metrics_csv(search_df, "13_kmeans_search.csv")
-profile_path = save_metrics_csv(cluster_profile, "13_kmeans_cluster_profile.csv")
-search_trace_path = save_metrics_csv(search_df, "13_kmeans_search_trace.csv")
-stability_path = save_metrics_csv(stability_df, "13_kmeans_stability.csv")
-comparison_path = save_metrics_csv(comparison_df, "13_kmeans_vs_gmm.csv")
+summary_path = save_metrics_csv(summary_df, "14_kmeans_metrics.csv")
+search_path = save_metrics_csv(search_df, "14_kmeans_search.csv")
+profile_path = save_metrics_csv(cluster_profile, "14_kmeans_cluster_profile.csv")
+search_trace_path = save_metrics_csv(search_df, "14_kmeans_search_trace.csv")
+stability_path = save_metrics_csv(stability_df, "14_kmeans_stability.csv")
+comparison_path = save_metrics_csv(comparison_df, "14_kmeans_vs_gmm.csv")
 model_path = save_model(final_model, "kmeans.joblib")
 scaler_path = save_model(scaler, "kmeans_scaler.joblib")
 pca_path = save_model(pca, "kmeans_pca.joblib")
@@ -216,7 +243,7 @@ ax.set_ylabel("PCA-2")
 legend1 = ax.legend(*scatter.legend_elements(), title="Cluster", loc="best", fontsize=8)
 ax.add_artist(legend1)
 plt.tight_layout()
-figure_path = FIGURES_DIR / "13_kmeans_clusters.png"
+figure_path = FIGURES_DIR / "14_kmeans_clusters.png"
 plt.savefig(figure_path, dpi=180)
 plt.close()
 

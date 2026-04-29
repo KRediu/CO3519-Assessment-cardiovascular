@@ -9,22 +9,25 @@ import matplotlib.pyplot as plt
 import numpy as np
 import seaborn as sns
 from sklearn.base import BaseEstimator
-from sklearn.metrics import auc, confusion_matrix, precision_recall_curve, roc_curve
+from sklearn.metrics import auc, confusion_matrix, precision_recall_curve, roc_curve, fbeta_score
 
 # Custom imports
-from utils import FIGURES_DIR, METRICS_DIR, load_processed_data, clean_cardio, ensure_dirs, load_raw_cardio, load_models_by_round, load_stacking_model, feature_engineer_clean
+from utils import FIGURES_DIR, METRICS_DIR, load_processed_data, clean_cardio, ensure_dirs, load_raw_cardio, load_models_by_round, load_stacking_model, feature_engineer_clean, load_thresholds
 
 
 # Evaluate the trained models on same data
 def evaluate_models(
-    models: dict[str, BaseEstimator], x_test: np.ndarray, y_test: np.ndarray
+    models: dict[str, BaseEstimator], x_test: np.ndarray, y_test: np.ndarray, thresholds: dict[str, float] | None = None
 ) -> Tuple[dict, dict, dict]:
     roc_data = {}
     pr_data = {}
     cms = {}
     for name, model in models.items():
         y_proba = model.predict_proba(x_test)[:, 1]
-        y_pred = model.predict(x_test)
+        if thresholds and name in thresholds:
+            y_pred = (y_proba >= thresholds[name]).astype(int)
+        else:
+            y_pred = model.predict(x_test)    # default threshold (0.5)
 
         fpr, tpr, _ = roc_curve(y_test, y_proba)
         precision, recall, _ = precision_recall_curve(y_test, y_proba)
@@ -68,6 +71,8 @@ def plot_correlation_heatmap() -> None:
         "cardio",
     ]
     corr = df[cols].corr()
+    corr.to_csv(METRICS_DIR/"13_correlation_matrix.csv")
+    
     plt.figure(figsize=(9, 7))
     sns.heatmap(corr, cmap="coolwarm", center=0.0, square=True)
     plt.title("Correlation Heatmap (Selected Features)")
@@ -85,13 +90,13 @@ def plot_correlation_heatmap_clean() -> None:
         "age_years", "ap_hi", "cholesterol", "cardio"
     ]
     corr = df[cols].corr()
-    corr.to_csv(METRICS_DIR/"12_correlation_matrix_clean.csv")
+    corr.to_csv(METRICS_DIR/"13_correlation_matrix_clean.csv")
 
     plt.figure(figsize=(7, 7))
     sns.heatmap(corr, cmap="coolwarm", center=0.0, square=True)
     plt.title("Correlation Heatmap (Selected Features)")
     plt.tight_layout()
-    plt.savefig(FIGURES_DIR / "12_correlation_heatmap_clean.png", dpi=150)
+    plt.savefig(FIGURES_DIR / "13_correlation_heatmap_clean.png", dpi=150)
     plt.close()
 
 
@@ -153,10 +158,13 @@ def plots_per_round() -> None:
     # Load data and models
     _, x_test, _, y_test = load_processed_data()
     r1_models, r2_models = load_models_by_round()
+    
+    # Load thresholds
+    thresholds = load_thresholds()
 
     # Evaluate both rounds
     roc_r1, pr_r1, cm_r1 = evaluate_models(r1_models, x_test, y_test)
-    roc_r2, pr_r2, cm_r2 = evaluate_models(r2_models, x_test, y_test)
+    roc_r2, pr_r2, cm_r2 = evaluate_models(r2_models, x_test, y_test, thresholds)
 
     # Create ROC curves plot round 1 & 2
     plot_roc(roc_r1, "ROC Curves - Round 1", "roc_curves_r1.png")
@@ -167,25 +175,37 @@ def plots_per_round() -> None:
     plot_pr(pr_r2, "Precision-Recall Curves - Round 2", "pr_curves_r2.png")
 
     # Create confusion matrices plots round 1 & 2
-    plot_confusion_matrices(cm_r1, "Confusion Matrices - Round 1", "confusion_matrices_r1.png")
-    plot_confusion_matrices(cm_r2, "Confusion Matrices - Round 2", "confusion_matrices_r2.png")
+    plot_confusion_matrices(cm_r1, "Confusion Matrices - Round 1", "confusion_matrices_r1.png", n_cols=3)
+    plot_confusion_matrices(cm_r2, "Confusion Matrices - Round 2", "confusion_matrices_r2.png", n_cols=3)
 
+# Create stacking related plots
 def plot_stacking_comparison() -> None:
     # Load data and models
-    _, x_test, _, y_test = load_processed_data()
+    x_train, x_test, y_train, y_test = load_processed_data()
     r1_models, r2_models = load_models_by_round()
     stacking_model = load_stacking_model()
     
+    # Load thresholds
+    thresholds = load_thresholds()
+    
+    # Compute F2-optimal threshold
+    train_proba = stacking_model.predict_proba(x_train)[:, 1]
+    thresholds_arr = np.linspace(0.01, 0.99, 99)
+    f2_scores = [fbeta_score(y_train, (train_proba >= t).astype(int), beta=2) for t in thresholds_arr]
+    stacking_threshold = thresholds_arr[np.argmax(f2_scores)]
+    
     # Combine into one dict for evaluation
     models = {**r2_models, "Stacking": stacking_model}
-    roc_data, pr_data, cm_data = evaluate_models(models, x_test, y_test)
+    all_thresholds = {**thresholds, "Stacking": stacking_threshold}
+
+    roc_data, pr_data, cm_data = evaluate_models(models, x_test, y_test, thresholds=all_thresholds)
     
     # Plot ROC
     plot_roc(roc_data, "ROC Curves - Stacking vs. Individual Models", "roc_curves_stacking.png")
     
     # Plot confusion matrices (all 5 models in one figure)
     plot_confusion_matrices(cm_data, "Confusion Matrices - Stacking vs. Individual Models", "confusion_matrices_stacking.png", n_cols=3)                       
-    
+
 
 # Ensure the directories exist
 ensure_dirs()

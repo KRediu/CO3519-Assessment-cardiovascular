@@ -13,8 +13,9 @@ files = {
     "5_logistic_regression_metrics.csv": "round_1",
     "6_mlp_metrics.csv": "round_1",
     "7_hist_gradient_boosting_metrics.csv": "round_1",
-    "8_tuned_model_metrics.csv": "round_2_tuned",
-    "9_stacking_metrics.csv": "stacking_ensemble"
+    "8_xgboost_metrics.csv": "round_1",
+    "9_tuned_model_metrics.csv": "round_2_tuned",
+    "10_stacking_metrics.csv": "stacking_ensemble"
 }
 
 # Load results and ensure round column exists
@@ -27,13 +28,13 @@ for f, default_round in files.items():
             df["round"] = default_round
         dfs.append(df)
 if not dfs:
-    raise FileNotFoundError("No model metric files found. Run scripts 4-7 first.")
+    raise FileNotFoundError("No model metric files found. Run scripts 4-10 first.")
 
 # Merge all results into a table and export them
 summary = pd.concat(dfs, ignore_index=True).sort_values(
     ["test_auc", "test_f1"], ascending=False
 )
-out = save_metrics_csv(summary, "10_model_comparison.csv")
+out = save_metrics_csv(summary, "11_model_comparison.csv")
 
 # Print confirmation
 print(f"Saved model comparison: {out}")

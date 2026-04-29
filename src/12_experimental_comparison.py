@@ -9,10 +9,10 @@ from utils import METRICS_DIR, save_metrics_csv
 
 
 # Ensure comparison data between models exists
-comp_path = METRICS_DIR / "10_model_comparison.csv"
+comp_path = METRICS_DIR / "11_model_comparison.csv"
 if not comp_path.exists():
     raise FileNotFoundError(
-        "Missing 10_model_comparison.csv. Run 10_results_comparison.py first."
+        "Missing 11_model_comparison.csv. Run 11_results_comparison.py first."
     )
 
 # Ensure all columns exists in csv
@@ -58,7 +58,7 @@ for m in common:
         }
     )
 out_df = pd.DataFrame(rows).sort_values("delta_test_auc", ascending=False)
-out_path = save_metrics_csv(out_df, "11_round_delta_report.csv")
+out_path = save_metrics_csv(out_df, "12_round_delta_report.csv")
 
 # Print confirmation
 print(f"Saved round delta report: {out_path}")
