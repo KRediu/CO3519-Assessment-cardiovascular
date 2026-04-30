@@ -1,7 +1,7 @@
 {
-  "logistic_regression": 0.15631981859385644,
-  "random_forest": 0.19956667657681998,
-  "mlp": 0.15044113089261354,
-  "hist_gradient_boosting": 0.2090660300175857,
-  "xgboost": 0.19419938325881958
+  "logistic_regression": 0.4,
+  "random_forest": 0.4,
+  "mlp": 0.4,
+  "hist_gradient_boosting": 0.4,
+  "xgboost": 0.4
 }

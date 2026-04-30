@@ -24,8 +24,17 @@ def evaluate_models(
     cms = {}
     for name, model in models.items():
         y_proba = model.predict_proba(x_test)[:, 1]
-        if thresholds and name in thresholds:
-            y_pred = (y_proba >= thresholds[name]).astype(int)
+        if thresholds:
+            canonical_name = name.lower().replace(' ', '').replace('_', '')
+            matched_key = None
+            for tkey in thresholds:
+                if tkey.lower().replace(' ', '').replace('_', '') == canonical_name:
+                    matched_key = tkey
+                    break
+            if matched_key:
+                y_pred = (y_proba >= thresholds[matched_key]).astype(int)
+            else:
+                y_pred = model.predict(x_test)
         else:
             y_pred = model.predict(x_test)    # default threshold (0.5)
 
@@ -190,7 +199,7 @@ def plot_stacking_comparison() -> None:
     
     # Compute F2-optimal threshold
     train_proba = stacking_model.predict_proba(x_train)[:, 1]
-    thresholds_arr = np.linspace(0.01, 0.99, 99)
+    thresholds_arr = np.linspace(0.25, 0.99, 99)
     f2_scores = [fbeta_score(y_train, (train_proba >= t).astype(int), beta=2) for t in thresholds_arr]
     stacking_threshold = thresholds_arr[np.argmax(f2_scores)]
     

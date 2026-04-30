@@ -71,7 +71,7 @@ oof_proba = cross_val_predict(
 )[:, 1]
 
 # Find best threshold using oof predictions
-thresholds = np.linspace(0.01, 0.99, 99)
+thresholds = np.linspace(0.4, 0.99, 99)
 f2_scores = [fbeta_score(y_train, (oof_proba >= t).astype(int), beta=2)
              for t in thresholds]
 best_threshold = thresholds[np.argmax(f2_scores)]

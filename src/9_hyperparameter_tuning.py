@@ -28,7 +28,7 @@ def best_threshold(model, x_test: np.ndarray, y_test: np.ndarray) -> float:
         score = fbeta_score(y_test, preds, beta=2, zero_division=0)
         if score > best_f2:
             best_f2, best_t = score, float(t)
-    return best_t
+    return best_t if best_t>0.4 else 0.4
 
 
 def evaluate(model, x_test: np.ndarray, y_test: np.ndarray, threshold: float = 0.5

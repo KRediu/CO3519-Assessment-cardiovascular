@@ -84,13 +84,13 @@ cv_f2_mean  = cv_out["test_f2"].mean()
 cv_auc_mean = cv_out["test_roc_auc"].mean()
 
 # Find best threshold using oof predictions
-thresholds = np.linspace(0.01, 0.99, 99)
+thresholds = np.linspace(0.40, 0.99, 99)
 f2_scores = [fbeta_score(y_train, (oof_proba >= t).astype(int), beta=2) for t in thresholds]
 best_threshold_f2 = thresholds[np.argmax(f2_scores)]
 
 # Find best cutoff using false negative rate <=3%
 target_fnr = 0.03
-best_cutoff_fnr = 0.5  # fallback
+best_threshold_fnr = 0.5  # fallback
 for t in thresholds[::-1]:  # scan from highest to lowest
     oof_pred = (oof_proba >= t).astype(int)
     tn, fp, fn, tp = confusion_matrix(y_train, oof_pred).ravel()
